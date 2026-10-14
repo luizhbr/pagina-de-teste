@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f6f3">
+<meta name="robots" content="noindex,nofollow">
+<title>Agenda · Next Finish</title>
+<style>
+:root{--bg:#f5f6f3;--card:#fff;--tx:#1b2620;--mu:#7a867f;--ac:#2f5d46;--on:#fff;--ln:#e3e7e1;--rd:#c0392b;--wa:#1b8f4e}
+:root[data-theme=dark]{--bg:#0f1512;--card:#161e19;--tx:#e8eee9;--mu:#8a988f;--ac:#6fb48f;--on:#0f1512;--ln:#25312a;--rd:#e5776a;--wa:#3cc17a}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f1512;--card:#161e19;--tx:#e8eee9;--mu:#8a988f;--ac:#6fb48f;--on:#0f1512;--ln:#25312a;--rd:#e5776a;--wa:#3cc17a}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,Roboto,sans-serif;padding-bottom:90px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{min-height:40px;border:0;background:none;border-radius:10px;padding:0 10px;cursor:pointer}
+button:active{opacity:.6}
+:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 8px 6px;border-bottom:1px solid var(--ln)}
+.nav{display:flex;align-items:center}
+.nav button{font-size:20px;min-width:40px;padding:0}
+#range{flex:1;text-align:center;font-weight:600}
+#bHoje{font-size:14px;color:var(--ac);font-weight:600}
+.strip{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:2px}
+.strip button{min-height:50px;padding:2px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--mu);font-size:11px;border-radius:12px}
+.strip b{font-size:17px;font-weight:600;color:var(--tx)}
+.strip i{width:4px;height:4px;border-radius:2px;background:var(--ac);margin-top:1px}
+.strip .z{background:none}
+.strip .hoje b{color:var(--ac)}
+.strip .sel{background:var(--ac)}.strip .sel,.strip .sel b{color:var(--on)}.strip .sel i{background:var(--on)}
+.tools{display:flex;gap:6px;margin-top:6px}
+.tools input,.tools select{min-height:40px;border:1px solid var(--ln);border-radius:10px;background:var(--card);padding:0 10px}
+.tools input{flex:1;min-width:0}
+main{padding:10px 12px}
+.dh{display:flex;align-items:center;gap:8px;margin:2px 0 8px}
+.dh h2{flex:1;margin:0;font-size:17px;font-weight:600;text-transform:capitalize}
+.dh span{color:var(--mu);font-size:13px}
+.dh button{color:var(--ac);font-weight:600;font-size:14px}
+.box{background:var(--card);border-radius:14px;border:1px solid var(--ln);overflow:hidden}
+.row{border-top:1px solid var(--ln)}.row:first-child{border-top:0}
+.rh{display:flex;align-items:center;gap:12px;padding:10px 12px;cursor:pointer}
+.hr{width:46px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--tx)}
+.hr.late{color:var(--rd)}
+.mid{flex:1;min-width:0}
+.mid b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mid small{display:block;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{font-size:12px;font-weight:600;border:1px solid;border-radius:20px;min-height:30px;padding:0 10px}
+.dt{padding:0 12px 12px 70px;font-size:14px}
+.dt a{color:var(--ac);text-decoration:none;display:block;margin-bottom:4px}
+.dt p{margin:4px 0}.dt .mu{color:var(--mu)}
+.ac{display:flex;gap:6px;margin-top:8px}
+.ac button{flex:1;border:1px solid var(--ln);font-weight:600;min-height:40px}
+.ac .wa{color:var(--wa);border-color:var(--wa)}
+.vazio{text-align:center;color:var(--mu);padding:36px 10px}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:52px;height:52px;border-radius:26px;background:var(--ac);color:var(--on);font-size:28px;padding:0;box-shadow:0 3px 10px #0004}
+.bk{font-size:13px;color:var(--rd);margin-bottom:8px;display:flex;gap:8px;align-items:center}
+.bk button{border:1px solid var(--rd);color:var(--rd);min-height:32px;font-size:13px}
+dialog{width:min(480px,94vw);max-height:92vh;border:0;border-radius:18px;padding:16px;background:var(--bg);color:var(--tx)}
+dialog::backdrop{background:#0008}
+dialog h3{margin:0 0 8px;font-size:18px}
+label{display:block;font-size:12px;color:var(--mu);margin-top:8px}
+label input,label select,label textarea{display:block;width:100%;min-height:42px;margin-top:2px;border:1px solid var(--ln);border-radius:10px;background:var(--card);padding:8px 10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fr{display:flex;gap:8px;margin-top:14px}.fr button{flex:1;border:1px solid var(--ln);font-weight:600;min-height:44px}
+.pri{background:var(--ac);color:var(--on);border-color:var(--ac)!important}.del{color:var(--rd)}
+.menu button{display:block;width:100%;text-align:left;border-top:1px solid var(--ln);border-radius:0;min-height:46px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:8px 14px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9;font-size:14px}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <div class="nav">
+    <button id="bPrev" aria-label="Semana anterior">‹</button><div id="range"></div><button id="bNext" aria-label="Próxima semana">›</button>
+    <button id="bHoje">Hoje</button><button id="bSearch" aria-label="Buscar">⌕</button><button id="bMenu" aria-label="Menu">⋯</button>
+  </div>
+  <div class="strip" id="strip"></div>
+  <div class="tools" id="tools" hidden>
+    <input id="q" type="search" placeholder="Buscar cliente, rua, serviço">
+    <select id="f" aria-label="Status"><option value="todos">Todos</option><option>Pendente</option><option>Confirmado</option><option>Concluído</option></select>
+  </div>
+</header>
+<main>
+  <div id="bkp"></div>
+  <div id="dh" class="dh"></div>
+  <div id="list"></div>
+</main>
+<button class="fab" id="bAdd" aria-label="Novo serviço">+</button>
+
+<dialog id="dlg"><form method="dialog" id="fm" style="margin:0">
+  <h3 id="dt">Novo serviço</h3>
+  <label>Cliente<input name="cliente" required autocomplete="off" list="clist"></label><datalist id="clist"></datalist>
+  <div class="g2"><label>Data<input name="data" type="date" required></label><label>Horário<input name="hora" type="time"></label></div>
+  <label>Endereço<input name="endereco" autocomplete="off"></label>
+  <label>Serviço<textarea name="servico" rows="2"></textarea></label>
+  <div class="g2"><label>Telefone<input name="tel" type="tel" inputmode="tel"></label><label>Valor<input name="valor" placeholder="$150"></label></div>
+  <label>Status<select name="status"><option>Pendente</option><option>Confirmado</option><option>Concluído</option></select></label>
+  <label>Observações<textarea name="obs" rows="2"></textarea></label>
+  <div class="fr"><button type="button" id="bCancel">Cancelar</button><button type="button" class="del" id="bDel">Excluir</button><button type="submit" class="pri">Salvar</button></div>
+</form></dialog>
+
+<dialog id="mdl"><div class="menu">
+  <h3>Opções</h3>
+  <button id="mConf">Confirmar todos do dia</button>
+  <button id="mSem">Copiar semana</button>
+  <button id="mTema">Modo claro/escuro</button>
+  <button id="mLang"></button>
+  <button id="mExp">Exportar backup (JSON)</button>
+  <button id="mImp">Importar backup (JSON)</button>
+  <button id="mTxt">Importar de texto colado</button>
+  <button id="mClose" style="text-align:center;font-weight:600">Fechar</button>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+</div></dialog>
+
+<dialog id="tdl"><h3>Importar de texto</h3>
+  <p style="color:var(--mu);font-size:13px;margin:0 0 8px">Uma linha por serviço: Cliente - 10:00 - Endereço - Serviço. Entram no dia selecionado.</p>
+  <textarea id="tx" rows="7" style="width:100%;border:1px solid var(--ln);border-radius:10px;background:var(--card);padding:10px"></textarea>
+  <div class="fr"><button id="tCancel">Cancelar</button><button id="tOk" class="pri">Importar</button></div>
+</dialog>
+<div id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s),KEY='agenda-nfc-public-v1',ST=['Pendente','Confirmado','Concluído'];
+const SC={Pendente:'#c47a12',Confirmado:'#2f6fb5','Concluído':'#2e7d4f'};
+const iso=d=>{const z=new Date(d.getTime()-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
+const prs=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const mon=d=>{const x=new Date(d);x.setDate(x.getDate()-(x.getDay()+6)%7);x.setHours(0,0,0,0);return x};
+const fmt=(d,o)=>d.toLocaleDateString('pt-BR',o);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ld=(k,def)=>{try{return JSON.parse(localStorage.getItem(k))??def}catch(e){return def}};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+const SEED=[];
+
+let items=ld(KEY,null),P={lang:'en',theme:'',bk:0,...ld(KEY+'-p',{})};
+let clients=ld(KEY+'-c',null);
+const nk=s=>String(s||'').trim().toLowerCase();
+function upCl(i){if(!i.cliente)return;const k=nk(i.cliente),c=clients[k]||{};clients[k]={nome:i.cliente.trim(),tel:i.tel||c.tel||'',endereco:i.endereco||c.endereco||''}}
+if(!items)items=SEED;
+if(!clients){clients={};items.forEach(upCl)}
+save();
+const S={ws:iso(mon(new Date())),sel:iso(new Date()),q:'',f:'todos',edit:null,open:null};
+function save(){try{localStorage.setItem(KEY,JSON.stringify(items));localStorage.setItem(KEY+'-p',JSON.stringify(P));localStorage.setItem(KEY+'-c',JSON.stringify(clients))}catch(e){toast('Não foi possível salvar')}}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1800)}
+const key=i=>i.data+(i.hora||'99:99');
+const late=i=>{if(i.status==='Concluído')return false;const d=prs(i.data);if(i.hora){const[h,m]=i.hora.split(':');d.setHours(+h,+m)}else d.setHours(23,59);return d<new Date()};
+const h12=t=>{const[h,m]=t.split(':').map(Number);return((h+11)%12+1)+':'+String(m).padStart(2,'0')+(h<12?' AM':' PM')};
+
+function render(){
+  document.documentElement.dataset.theme=P.theme;
+  const ws=prs(S.ws),we=new Date(ws);we.setDate(we.getDate()+6);
+  $('#range').textContent=fmt(ws,{day:'numeric'})+'–'+fmt(we,{day:'numeric',month:'short'}).replace('.','');
+  const hoje=iso(new Date());let st='';
+  for(let n=0;n<7;n++){const d=new Date(ws);d.setDate(d.getDate()+n);const k=iso(d),c=items.some(i=>i.data===k);
+    st+=`<button data-d="${k}" class="${k===hoje?'hoje ':''}${k===S.sel?'sel':''}"><span>${fmt(d,{weekday:'short'}).replace('.','')}</span><b>${d.getDate()}</b>${c?'<i></i>':'<i class="z"></i>'}</button>`}
+  $('#strip').innerHTML=st;
+  const q=S.q.trim().toLowerCase();
+  let L=items.filter(i=>q?(i.cliente+' '+i.endereco+' '+i.servico+' '+i.tel).toLowerCase().includes(q):i.data===S.sel);
+  if(S.f!=='todos')L=L.filter(i=>i.status===S.f);
+  L.sort((a,b)=>key(a).localeCompare(key(b)));
+  $('#dh').innerHTML=q?`<h2>Resultados</h2><span>${L.length}</span>`:`<h2>${fmt(prs(S.sel),{weekday:'long',day:'numeric',month:'long'})}</h2><span>${L.length}</span><button data-a="cd">Copiar</button>`;
+  const old=items.length&&Date.now()-P.bk>7*864e5;
+  $('#bkp').innerHTML=old?`<div class="bk"><span>Sem backup há mais de 7 dias.</span><button data-a="bk">Fazer backup</button></div>`:'';
+  $('#list').innerHTML=L.length?'<div class="box">'+L.map(i=>{const o=S.open===i.id;return`<div class="row" data-id="${i.id}">
+    <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora||'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${q?fmt(prs(i.data),{day:'2-digit',month:'2-digit'})+' · ':''}${esc(i.servico||i.endereco)}</small>`}</div><button class="pill" data-a="st" style="color:${SC[i.status]}">${i.status}</button></div>
+    ${o?`<div class="dt">${i.endereco?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco)}">${esc(i.endereco)}</a>`:''}${i.servico?`<p>${esc(i.servico)}</p>`:''}${i.valor?`<p><b>${esc(i.valor)}</b></p>`:''}${i.obs?`<p class="mu">${esc(i.obs)}</p>`:''}
+      <div class="ac"><button class="wa" data-a="wa">WhatsApp</button><button data-a="rp">Repetir</button><button data-a="ed">Editar</button></div></div>`:''}
+  </div>`}).join('')+'</div>':`<div class="vazio">${q?'Nada encontrado.':'Dia livre.'}</div>`;
+}
+
+function blk(i){return[`${i.hora||'--:--'} – ${i.cliente}`,i.endereco&&'📍 '+i.endereco,i.servico&&'🔧 '+i.servico,i.valor&&'💲 '+i.valor,i.tel&&'📞 '+i.tel].filter(Boolean).join('\n')}
+const dTitle=k=>{const t=fmt(prs(k),{weekday:'long',day:'2-digit',month:'2-digit'});return'📅 '+t[0].toUpperCase()+t.slice(1)};
+function dayText(k){const L=items.filter(i=>i.data===k).sort((a,b)=>key(a).localeCompare(key(b)));return dTitle(k)+'\n\n'+(L.length?L.map(blk).join('\n\n'):'Sem serviços')}
+function weekText(){const ws=prs(S.ws),o=[];for(let n=0;n<7;n++){const d=new Date(ws);d.setDate(d.getDate()+n);const k=iso(d);if(items.some(i=>i.data===k))o.push(dayText(k))}return o.join('\n\n———\n\n')||'Sem serviços na semana'}
+async function copy(t,ok){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast(ok)}
+
+function msg(i){const d=prs(i.data);
+  if(P.lang==='pt')return`Olá ${i.cliente}, aqui é o Luiz da Next Finish Carpentry. Confirmando nosso serviço ${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${i.hora?' às '+i.hora:''}${i.endereco?' em '+i.endereco:''}. Tudo certo?`;
+  return`Hi ${i.cliente}, this is Luiz from Next Finish Carpentry. Confirming our appointment on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${i.hora?' at '+h12(i.hora):''}${i.endereco?' at '+i.endereco:''}. Does that still work for you?`}
+function wa(i){let n=(i.tel||'').replace(/\D/g,'');if(n.length===10)n='1'+n;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg(i))}`,'_blank')}
+
+const dlg=$('#dlg'),fm=$('#fm');
+function fillList(){$('#clist').innerHTML=Object.values(clients).sort((a,b)=>a.nome.localeCompare(b.nome)).map(c=>`<option value="${esc(c.nome)}">`).join('')}
+fm.elements.cliente.addEventListener('input',e=>{const c=clients[nk(e.target.value)];if(!c)return;
+  if(!fm.elements.tel.value)fm.elements.tel.value=c.tel;if(!fm.elements.endereco.value)fm.elements.endereco.value=c.endereco});
+function openForm(i,novo){fillList();S.edit=i&&!novo?i.id:null;$('#dt').textContent=S.edit?'Editar serviço':'Novo serviço';$('#bDel').style.display=S.edit?'':'none';
+  const v=i||{data:S.sel,status:'Pendente'};for(const e of fm.elements)if(e.name)e.value=v[e.name]??'';dlg.showModal()}
+fm.addEventListener('submit',()=>{const o={};for(const x of fm.elements)if(x.name)o[x.name]=x.value.trim();
+  if(S.edit){Object.assign(items.find(i=>i.id===S.edit),o)}else items.push({id:uid(),...o});
+  upCl(o);save();S.sel=o.data;S.ws=iso(mon(prs(o.data)));render();toast('Salvo')});
+$('#bCancel').onclick=()=>dlg.close();
+$('#bDel').onclick=()=>{if(confirm('Excluir este serviço?')){items=items.filter(i=>i.id!==S.edit);save();dlg.close();render()}};
+$('#bAdd').onclick=()=>openForm();
+
+$('#list').onclick=e=>{const row=e.target.closest('.row');if(!row)return;const i=items.find(x=>x.id===row.dataset.id),b=e.target.closest('button');if(!i)return;
+  if(!b){if(e.target.closest('a'))return;S.open=S.open===i.id?null:i.id;return render()}
+  if(b.dataset.a==='st'){i.status=ST[(ST.indexOf(i.status)+1)%3];save();render()}
+  else if(b.dataset.a==='wa')wa(i);else if(b.dataset.a==='ed')openForm(i);else if(b.dataset.a==='rp')openForm({cliente:i.cliente,tel:i.tel,endereco:i.endereco,data:S.sel,status:'Pendente'},true)};
+$('#dh').onclick=e=>{if(e.target.dataset.a==='cd')copy(dayText(S.sel),'Dia copiado')};
+$('#strip').onclick=e=>{const b=e.target.closest('button');if(b){S.sel=b.dataset.d;S.open=null;$('#q').value='';S.q='';render()}};
+const shift=n=>{const d=prs(S.ws);d.setDate(d.getDate()+n);S.ws=iso(d);const s=prs(S.sel);s.setDate(s.getDate()+n);S.sel=iso(s);S.open=null;render()};
+$('#bPrev').onclick=()=>shift(-7);$('#bNext').onclick=()=>shift(7);
+$('#bHoje').onclick=()=>{S.ws=iso(mon(new Date()));S.sel=iso(new Date());$('#q').value='';S.q='';S.open=null;render()};
+$('#bSearch').onclick=()=>{const t=$('#tools');t.hidden=!t.hidden;if(!t.hidden)$('#q').focus();else{$('#q').value='';S.q='';S.f='todos';$('#f').value='todos';render()}};
+$('#q').oninput=e=>{S.q=e.target.value;render()};$('#f').onchange=e=>{S.f=e.target.value;render()};
+
+const mdl=$('#mdl'),lbl=()=>$('#mLang').textContent='Idioma da mensagem: '+(P.lang==='en'?'Inglês (EN)':'Português (PT)');
+$('#bMenu').onclick=()=>{lbl();mdl.showModal()};$('#mClose').onclick=()=>mdl.close();
+$('#mConf').onclick=()=>{let n=0;items.forEach(i=>{if(i.data===S.sel&&i.status==='Pendente'){i.status='Confirmado';n++}});save();mdl.close();render();toast(n+' confirmado'+(n==1?'':'s'))};
+$('#mSem').onclick=()=>{mdl.close();copy(weekText(),'Semana copiada')};
+$('#mTema').onclick=()=>{const dark=matchMedia('(prefers-color-scheme: dark)').matches;const cur=P.theme||(dark?'dark':'light');P.theme=cur==='dark'?'light':'dark';save();render()};
+$('#mLang').onclick=()=>{P.lang=P.lang==='en'?'pt':'en';save();lbl()};
+function backup(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({items,clients},null,1)],{type:'application/json'}));a.download='agenda-backup-'+iso(new Date())+'.json';a.click();P.bk=Date.now();save();render();toast('Backup baixado')}
+$('#mExp').onclick=()=>{mdl.close();backup()};$('#bkp').onclick=e=>{if(e.target.dataset.a==='bk')backup()};
+$('#mImp').onclick=()=>$('#file').click();
+$('#file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text()),a=Array.isArray(j)?j:j.items;if(!Array.isArray(a))throw 0;
+  if(confirm(`Importar ${a.length} serviços? Isso substitui tudo que está no app.`)){items=a.map(x=>({...x,id:uid()}));clients=(!Array.isArray(j)&&j.clients)||{};items.forEach(upCl);save();mdl.close();render();toast('Importado')}}catch(x){toast('Arquivo inválido')}e.target.value=''};
+$('#mTxt').onclick=()=>{mdl.close();$('#tdl').showModal()};$('#tCancel').onclick=()=>$('#tdl').close();
+$('#tOk').onclick=()=>{let n=0;$('#tx').value.split('\n').forEach(l=>{const p=l.split(/\s+[-–—]\s+/).map(s=>s.trim()).filter(Boolean);if(!p.length)return;
+  const ti=p.findIndex((s,k)=>k>0&&/^\d{1,2}:\d{2}$/.test(s)),hora=ti>0?p.splice(ti,1)[0].padStart(5,'0'):'';
+  items.push({id:uid(),cliente:p[0],data:S.sel,hora,endereco:p[1]||'',servico:p[2]||'',valor:'',tel:'',status:'Pendente',obs:''});upCl(items[items.length-1]);n++});
+  save();$('#tx').value='';$('#tdl').close();render();toast(n+' importado'+(n==1?'':'s'))};
+render();
+</script>
+</body>
+</html>
