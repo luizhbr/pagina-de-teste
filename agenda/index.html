@@ -177,16 +177,18 @@ main{max-width:780px;margin:auto;padding:12px}
   </div>
   <div id="strip" class="strip week-view" aria-label="Calendário"></div>
   <div class="status-legend" aria-label="Cores dos agendamentos">
-    <span><i class="legend-dot" style="background:#d8a52a"></i>Agendado / Orçamento</span>
-    <span><i class="legend-dot" style="background:#27985b"></i>Concluído</span>
-    <span><i class="legend-dot" style="background:#d64d49"></i>Não fechado</span>
+    <span><i class="legend-dot" style="background:#289e60"></i>Concluído</span>
+    <span><i class="legend-dot" style="background:#dc434e"></i>Não fechado</span>
+    <span><i class="legend-dot" style="background:#fff;border:1px solid #8b9099"></i>Visita de orçamento</span>
+    <span><i class="legend-dot" style="background:#2a7be3"></i>Em andamento</span>
+    <span><i class="legend-dot" style="background:#8b5be7"></i>Aguardando confirmação</span>
   </div>
   <button type="button" id="viewHandle" aria-label="Expandir calendário">
     <span class="chev" aria-hidden="true">⌃</span><span id="viewHint">Deslize para cima para expandir</span>
   </button>
   <div class="tools" id="tools" hidden>
     <input id="q" type="search" placeholder="Buscar cliente, rua, serviço">
-    <select id="f" aria-label="Status"><option value="todos">Todos</option><option>Pendente</option><option>Orçamento</option><option>Visita agendada</option><option>Em espera</option><option>Confirmado</option><option>Concluído</option><option>Não fechado</option></select>
+    <select id="f" aria-label="Status"><option value="todos">Todos</option><option>Concluído</option><option>Não fechado</option><option>Visita de orçamento</option><option>Em andamento</option><option>Aguardando confirmação</option></select>
   </div>
 </header>
 <main>
@@ -206,19 +208,18 @@ main{max-width:780px;margin:auto;padding:12px}
   <div class="suggestions" id="addressHints" aria-label="Endereços sugeridos" hidden></div>
   <label>Serviço<textarea name="servico" rows="2"></textarea></label>
   <div class="g2"><label>Telefone<input name="tel" type="tel" inputmode="tel"></label><label>Valor<input name="valor" placeholder="$150"></label></div>
-  <label>Status<select name="status"><option>Pendente</option><option>Orçamento</option><option>Visita agendada</option><option>Em espera</option><option>Confirmado</option><option>Concluído</option><option>Não fechado</option></select></label>
+  <label>Status<select name="status"><option>Concluído</option><option>Não fechado</option><option>Visita de orçamento</option><option>Em andamento</option><option>Aguardando confirmação</option></select></label>
   <label>Observações<textarea name="obs" rows="2"></textarea></label>
   <div class="fr"><button type="button" id="bCancel">Cancelar</button><button type="button" class="del" id="bDel">Excluir</button><button type="submit" class="pri">Salvar</button></div>
 </form></dialog>
 <dialog id="sdl">
   <h3>Atualizar status</h3>
-  <p class="status-explainer">Amarelo: agendado, orçamento ou espera · Verde: concluído · Vermelho: não fechado</p>
+  <p class="status-explainer">Escolha o andamento do serviço. A cor aparecerá no calendário.</p>
   <div id="statusOptions" class="status-options"></div>
   <div class="fr"><button type="button" id="statusClose">Cancelar</button></div>
 </dialog>
 <dialog id="mdl"><div class="menu">
   <h3>Opções</h3>
-  <button id="mConf">Confirmar todos do dia</button>
   <button id="mSem">Copiar semana</button>
   <button id="mTema">Modo claro/escuro</button>
   <button id="mLang"></button>
@@ -239,11 +240,44 @@ main{max-width:780px;margin:auto;padding:12px}
 <div id="toast"></div>
 
 <script>
-const $=s=>document.querySelector(s),KEY='agenda-nfc-public-v1',ST=['Pendente','Orçamento','Visita agendada','Em espera','Confirmado','Concluído','Não fechado'];
-const SC={Pendente:'#c99112','Orçamento':'#c99112','Visita agendada':'#c99112','Em espera':'#c99112',Confirmado:'#c99112','Concluído':'#299a60','Não fechado':'#d64d49'};
-const DOT={pending:'#d8a52a',done:'#27985b',lost:'#d64d49'};
-function tone(i){const s=String(i.status||'');return s==='Concluído'?'done':s==='Não fechado'?'lost':'pending'}
-function eventDots(events){return events.slice(0,3).map(i=>'<i class="event-dot" style="background-color:'+DOT[tone(i)]+'"></i>').join('')}
+const $=s=>document.querySelector(s),KEY='agenda-nfc-public-v1',
+ ST=['Concluído','Não fechado','Visita de orçamento','Em andamento','Aguardando confirmação'];
+const SC={
+ 'Concluído':'#289e60',
+ 'Não fechado':'#dc434e',
+ 'Visita de orçamento':'#ffffff',
+ 'Em andamento':'#2a7be3',
+ 'Aguardando confirmação':'#8b5be7'
+};
+const LEGACY_STATUS={
+ 'Pendente':'Aguardando confirmação',
+ 'Orçamento':'Visita de orçamento',
+ 'Visita agendada':'Visita de orçamento',
+ 'Em espera':'Aguardando confirmação',
+ 'Confirmado':'Em andamento'
+};
+function migrateStatuses(){
+ let changed=false;
+ for(const i of items){
+   if(!ST.includes(i.status)){
+     i.statusAnterior=i.status||'';
+     i.status=LEGACY_STATUS[i.status]||'Aguardando confirmação';
+     changed=true;
+   }
+ }
+ return changed;
+}
+function dotStyle(status){
+ const color=SC[status]||SC['Aguardando confirmação'];
+ const border=status==='Visita de orçamento'?'#8b9099':color;
+ return 'background-color:'+color+';border:1px solid '+border;
+}
+function badgeStyle(status){
+ if(status==='Visita de orçamento')return 'color:#292e36;border-color:#858b93;background-color:#ffffff';
+ const color=SC[status]||SC['Aguardando confirmação'];
+ return 'color:'+color+';border-color:'+color;
+}
+function eventDots(events){return events.slice(0,3).map(i=>'<i class="event-dot" style="'+dotStyle(i.status)+'"></i>').join('')}
 const iso=d=>{const z=new Date(d.getTime()-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
 const prs=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
 const mon=d=>{const x=new Date(d);x.setDate(x.getDate()-x.getDay());x.setHours(0,0,0,0);return x};
@@ -260,7 +294,7 @@ const nk=s=>String(s||'').trim().toLowerCase();
 function upCl(i){if(!i.cliente)return;const k=nk(i.cliente),c=clients[k]||{};clients[k]={nome:i.cliente.trim(),tel:i.tel||c.tel||'',endereco:i.endereco||c.endereco||''}}
 if(!items)items=SEED;
 if(!clients){clients={};items.forEach(upCl)}
-save();
+migrateStatuses();save();
 const S={statusId:null,ws:iso(mon(new Date())),sel:iso(new Date()),q:'',f:'todos',edit:null,open:null,view:['week','month'].includes(P.view)?P.view:'week',scope:P.view==='month'?'period':'day'};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(items));localStorage.setItem(KEY+'-p',JSON.stringify(P));localStorage.setItem(KEY+'-c',JSON.stringify(clients))}catch(e){toast('Não foi possível salvar')}}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1800)}
@@ -377,7 +411,7 @@ function render(){
    }
    const o=S.open===i.id;
    rows+=`<div class="row" data-id="${esc(i.id)}">
-     <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora||'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><button type="button" class="pill" data-a="st" style="color:${SC[i.status]||SC.Pendente};border-color:${SC[i.status]||SC.Pendente}">${esc(i.status)}</button></div>
+     <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora||'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><button type="button" class="pill" data-a="st" style="${badgeStyle(i.status)}">${esc(i.status)}</button></div>
      ${o?`<div class="dt">${i.endereco?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco)}">${esc(i.endereco)}</a>`:''}${i.servico?`<p>${esc(i.servico)}</p>`:''}${i.valor?`<p><b>${esc(i.valor)}</b></p>`:''}${i.obs?`<p class="mu">${esc(i.obs)}</p>`:''}
        <div class="ac"><button type="button" class="wa" data-a="sms">SMS</button><button type="button" data-a="rp">Repetir</button><button type="button" data-a="ed">Editar</button></div></div>`:''}
    </div>`;
@@ -562,7 +596,7 @@ document.addEventListener('pointerdown',e=>{
  if(!e.target.closest('#clientHints')&&!e.target.closest('#addressHints')&&!e.target.closest('input[name="cliente"]')&&!e.target.closest('input[name="endereco"]'))hideHints();
 });
 function openForm(i,novo){fillList();hideHints();S.edit=i&&!novo?i.id:null;$('#dt').textContent=S.edit?'Editar serviço':'Novo serviço';$('#bDel').style.display=S.edit?'':'none';
-  const v=i||{data:S.sel,status:'Pendente'};for(const e of fm.elements)if(e.name)e.value=v[e.name]??'';dlg.showModal()}
+  const v=i||{data:S.sel,status:'Aguardando confirmação'};for(const e of fm.elements)if(e.name)e.value=v[e.name]??'';dlg.showModal()}
 fm.addEventListener('submit',()=>{const o={};for(const x of fm.elements)if(x.name)o[x.name]=x.value.trim();
   if(S.edit){Object.assign(items.find(i=>i.id===S.edit),o)}else items.push({id:uid(),...o});
   upCl(o);save();S.sel=o.data;S.ws=iso(mon(prs(o.data)));render();toast('Salvo')});
@@ -573,7 +607,7 @@ $('#bAdd').onclick=()=>openForm();
 function openStatus(i){
  S.statusId=i.id;
  $('#statusOptions').innerHTML=ST.map(st=>
-   '<button type="button" data-choice="'+esc(st)+'" aria-current="'+String(i.status===st)+'"><i class="legend-dot" style="background-color:'+DOT[tone({status:st})]+'"></i>'+esc(st)+'</button>'
+   '<button type="button" data-choice="'+esc(st)+'" aria-current="'+String(i.status===st)+'"><i class="legend-dot" style="'+dotStyle(st)+'"></i>'+esc(st)+'</button>'
  ).join('');
  $('#sdl').showModal();
 }
@@ -594,7 +628,7 @@ $('#list').onclick=e=>{
  if(b.dataset.a==='st')openStatus(i);
  else if(b.dataset.a==='sms')sms(i);
  else if(b.dataset.a==='ed')openForm(i);
- else if(b.dataset.a==='rp')openForm({cliente:i.cliente,tel:i.tel,endereco:i.endereco,data:S.sel,status:'Pendente'},true);
+ else if(b.dataset.a==='rp')openForm({cliente:i.cliente,tel:i.tel,endereco:i.endereco,data:S.sel,status:'Aguardando confirmação'},true);
 };
 
 $('#dh').onclick=e=>{
@@ -635,7 +669,6 @@ $('#q').oninput=e=>{S.q=e.target.value;render()};$('#f').onchange=e=>{S.f=e.targ
 
 const mdl=$('#mdl'),lbl=()=>$('#mLang').textContent='Idioma da mensagem: '+(P.lang==='en'?'Inglês (EN)':'Português (PT)');
 $('#bMenu').onclick=()=>{lbl();mdl.showModal()};$('#mClose').onclick=()=>mdl.close();
-$('#mConf').onclick=()=>{let n=0;items.forEach(i=>{if(i.data===S.sel&&i.status==='Pendente'){i.status='Confirmado';n++}});save();mdl.close();render();toast(n+' confirmado'+(n==1?'':'s'))};
 $('#mSem').onclick=()=>{mdl.close();copy(weekText(),'Semana copiada')};
 $('#mTema').onclick=()=>{const dark=matchMedia('(prefers-color-scheme: dark)').matches;const cur=P.theme||(dark?'dark':'light');P.theme=cur==='dark'?'light':'dark';save();render()};
 $('#mLang').onclick=()=>{P.lang=P.lang==='en'?'pt':'en';save();lbl()};
@@ -715,11 +748,11 @@ $('#clientfile').onchange=async e=>{
 
 $('#mImp').onclick=()=>$('#file').click();
 $('#file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text()),a=Array.isArray(j)?j:j.items;if(!Array.isArray(a))throw 0;
-  if(confirm(`Importar ${a.length} serviços? Isso substitui tudo que está no app.`)){items=a.map(x=>({...x,id:uid()}));clients=(!Array.isArray(j)&&j.clients)||{};items.forEach(upCl);save();fillList();mdl.close();render();toast('Importado')}}catch(x){toast('Arquivo inválido')}e.target.value=''};
+  if(confirm(`Importar ${a.length} serviços? Isso substitui tudo que está no app.`)){items=a.map(x=>({...x,id:uid()}));clients=(!Array.isArray(j)&&j.clients)||{};items.forEach(upCl);migrateStatuses();save();fillList();mdl.close();render();toast('Importado')}}catch(x){toast('Arquivo inválido')}e.target.value=''};
 $('#mTxt').onclick=()=>{mdl.close();$('#tdl').showModal()};$('#tCancel').onclick=()=>$('#tdl').close();
 $('#tOk').onclick=()=>{let n=0;$('#tx').value.split('\n').forEach(l=>{const p=l.split(/\s+[-–—]\s+/).map(s=>s.trim()).filter(Boolean);if(!p.length)return;
   const ti=p.findIndex((s,k)=>k>0&&/^\d{1,2}:\d{2}$/.test(s)),hora=ti>0?p.splice(ti,1)[0].padStart(5,'0'):'';
-  items.push({id:uid(),cliente:p[0],data:S.sel,hora,endereco:p[1]||'',servico:p[2]||'',valor:'',tel:'',status:'Pendente',obs:''});upCl(items[items.length-1]);n++});
+  items.push({id:uid(),cliente:p[0],data:S.sel,hora,endereco:p[1]||'',servico:p[2]||'',valor:'',tel:'',status:'Aguardando confirmação',obs:''});upCl(items[items.length-1]);n++});
   save();$('#tx').value='';$('#tdl').close();render();toast(n+' importado'+(n==1?'':'s'))};
 render();
 </script>
