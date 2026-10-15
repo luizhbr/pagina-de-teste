@@ -381,21 +381,49 @@ function render(){
 
 function iKey(i){return (i.data||'')+(i.hora||'99:99')}
 
-function blk(i){return[`${i.hora||'--:--'} – ${i.cliente}`,i.endereco&&'📍 '+i.endereco,i.servico&&'🔧 '+i.servico,i.valor&&'💲 '+i.valor,i.tel&&'📞 '+i.tel].filter(Boolean).join('\n')}
-const dTitle=k=>{const t=fmt(prs(k),{weekday:'long',day:'2-digit',month:'2-digit'});return'📅 '+t[0].toUpperCase()+t.slice(1)};
-function dayText(k){const L=items.filter(i=>i.data===k).sort((a,b)=>key(a).localeCompare(key(b)));return dTitle(k)+'\n\n'+(L.length?L.map(blk).join('\n\n'):'Sem serviços')}
-function weekText(){const ws=prs(S.ws),o=[];for(let n=0;n<7;n++){const d=new Date(ws);d.setDate(d.getDate()+n);const k=iso(d);if(items.some(i=>i.data===k))o.push(dayText(k))}return o.join('\n\n———\n\n')||'Sem serviços na semana'}
-function periodText(){
- const scope=S.sel.slice(0,7);
- const events=items.filter(i=>i.data.startsWith(scope)).sort((a,b)=>iKey(a).localeCompare(iKey(b)));
- return events.length?events.map(i=>dTitle(i.data)+'\n'+blk(i)).join('\n\n———\n\n'):'Sem serviços no período';
+function amount(v){
+ const value=String(v||'').trim();
+ return value?(value.startsWith('$')?value:'$'+value):'';
 }
+function blk(i){
+ const date=fmt(prs(i.data),{day:'2-digit',month:'2-digit',year:'numeric'});
+ return [
+   '📅 '+date+(i.hora?' - '+i.hora:''),
+   '**'+String(i.cliente||'').trim()+'**',
+   i.tel||'',
+   i.endereco?'📍 '+i.endereco:'',
+   i.servico||'',
+   amount(i.valor)
+ ].filter(Boolean).join('\n');
+}
+function dayText(k){
+ const entries=items.filter(i=>i.data===k).sort((a,b)=>iKey(a).localeCompare(iKey(b)));
+ return entries.length?entries.map(blk).join('\n\n'):'📅 '+fmt(prs(k),{day:'2-digit',month:'2-digit',year:'numeric'})+'\nSem serviços';
+}
+function weekText(){
+ const start=prs(S.ws),end=new Date(start);end.setDate(end.getDate()+6);
+ const entries=items.filter(i=>i.data>=iso(start)&&i.data<=iso(end)).sort((a,b)=>iKey(a).localeCompare(iKey(b)));
+ return entries.length?entries.map(blk).join('\n\n'):'Sem serviços na semana';
+}
+function periodText(){
+ const period=S.sel.slice(0,7);
+ const entries=items.filter(i=>i.data.startsWith(period)).sort((a,b)=>iKey(a).localeCompare(iKey(b)));
+ return entries.length?entries.map(blk).join('\n\n'):'Sem serviços no período';
+}
+
 async function copy(t,ok){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast(ok)}
 
 function msg(i){const d=prs(i.data);
   if(P.lang==='pt')return`Olá ${i.cliente}, aqui é o Luiz da Next Finish Carpentry. Confirmando nosso serviço ${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${i.hora?' às '+i.hora:''}${i.endereco?' em '+i.endereco:''}. Tudo certo?`;
   return`Hi ${i.cliente}, this is Luiz from Next Finish Carpentry. Confirming our appointment on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${i.hora?' at '+h12(i.hora):''}${i.endereco?' at '+i.endereco:''}. Does that still work for you?`}
-function wa(i){let n=(i.tel||'').replace(/\D/g,'');if(n.length===10)n='1'+n;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg(i))}`,'_blank')}
+function sms(i){
+ let number=String(i.tel||'').replace(/\D/g,'');
+ if(number.length===10)number='1'+number;
+ if(number.length<10){toast('Cadastre um número de telefone para enviar SMS');return}
+ const apple=/iPhone|iPad|iPod/i.test(navigator.userAgent||'');
+ const link='sms:+'+number+(apple?'&':'?')+'body='+encodeURIComponent(msg(i));
+ window.location.href=link;
+}
 
 const dlg=$('#dlg'),fm=$('#fm');
 const normalizeSearch=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleLowerCase('pt-BR');
@@ -484,10 +512,33 @@ $('#bCancel').onclick=()=>{hideHints();dlg.close()};
 $('#bDel').onclick=()=>{if(confirm('Excluir este serviço?')){items=items.filter(i=>i.id!==S.edit);save();dlg.close();render()}};
 $('#bAdd').onclick=()=>openForm();
 
-$('#list').onclick=e=>{const row=e.target.closest('.row');if(!row)return;const i=items.find(x=>x.id===row.dataset.id),b=e.target.closest('button');if(!i)return;
-  if(!b){if(e.target.closest('a'))return;S.open=S.open===i.id?null:i.id;return render()}
-  if(b.dataset.a==='st'){i.status=ST[(ST.indexOf(i.status)+1)%3];save();render()}
-  else if(b.dataset.a==='wa')wa(i);else if(b.dataset.a==='ed')openForm(i);else if(b.dataset.a==='rp')openForm({cliente:i.cliente,tel:i.tel,endereco:i.endereco,data:S.sel,status:'Pendente'},true)};
+function openStatus(i){
+ S.statusId=i.id;
+ $('#statusOptions').innerHTML=ST.map(st=>
+   '<button type="button" data-choice="'+esc(st)+'" aria-current="'+String(i.status===st)+'"><i class="legend-dot" style="background-color:'+DOT[tone({status:st})]+'"></i>'+esc(st)+'</button>'
+ ).join('');
+ $('#sdl').showModal();
+}
+$('#statusOptions').onclick=e=>{
+ const b=e.target.closest('button[data-choice]');
+ if(!b||!ST.includes(b.dataset.choice))return;
+ const i=items.find(x=>x.id===S.statusId);
+ if(!i)return;
+ i.status=b.dataset.choice;
+ save();$('#sdl').close();render();toast('Status atualizado');
+};
+$('#statusClose').onclick=()=>$('#sdl').close();
+$('#list').onclick=e=>{
+ const row=e.target.closest('.row');if(!row)return;
+ const i=items.find(x=>x.id===row.dataset.id),b=e.target.closest('button');
+ if(!i)return;
+ if(!b){if(e.target.closest('a'))return;S.open=S.open===i.id?null:i.id;return render()}
+ if(b.dataset.a==='st')openStatus(i);
+ else if(b.dataset.a==='sms')sms(i);
+ else if(b.dataset.a==='ed')openForm(i);
+ else if(b.dataset.a==='rp')openForm({cliente:i.cliente,tel:i.tel,endereco:i.endereco,data:S.sel,status:'Pendente'},true);
+};
+
 $('#dh').onclick=e=>{
   if(e.target.dataset.a==='cd')copy(S.scope==='period'&&S.view!=='week'?periodText() : dayText(S.sel),'Agenda copiada');
   if(e.target.dataset.a==='scope'){S.scope=S.scope==='period'?'day':'period';S.open=null;render()}
