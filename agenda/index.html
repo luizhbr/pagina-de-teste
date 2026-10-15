@@ -367,8 +367,8 @@ function msg(i){const d=prs(i.data);
 function wa(i){let n=(i.tel||'').replace(/\D/g,'');if(n.length===10)n='1'+n;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg(i))}`,'_blank')}
 
 const dlg=$('#dlg'),fm=$('#fm');
-const normalizeSearch=s=>String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').trim().toLocaleLowerCase('pt-BR');
-const normalizedKey=s=>normalizeSearch(s).replace(/\\s+/g,' ');
+const normalizeSearch=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleLowerCase('pt-BR');
+const normalizedKey=s=>normalizeSearch(s).replace(/\s+/g,' ');
 function clientEntries(){
   return Object.entries(clients).filter(([k,c])=>c&&c.nome).map(([key,c])=>({key,...c}));
 }
@@ -501,6 +501,78 @@ $('#mTema').onclick=()=>{const dark=matchMedia('(prefers-color-scheme: dark)').m
 $('#mLang').onclick=()=>{P.lang=P.lang==='en'?'pt':'en';save();lbl()};
 function backup(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({items,clients},null,1)],{type:'application/json'}));a.download='agenda-backup-'+iso(new Date())+'.json';a.click();P.bk=Date.now();save();render();toast('Backup baixado')}
 $('#mExp').onclick=()=>{mdl.close();backup()};$('#bkp').onclick=e=>{if(e.target.dataset.a==='bk')backup()};
+
+function parseClientCSV(source){
+ const raw=String(source||'').replace(/^\uFEFF/,'');
+ const first=raw.split(/\r?\n/).find(line=>line.trim())||'';
+ const delimiters=[',',';','\t'];
+ const delimit=delimiters.map(del=>({del,count:countOutsideQuotes(first,del)})).sort((a,b)=>b.count-a.count)[0];
+ if(!delimit||delimit.count<1)throw Error('Cabeçalho CSV não reconhecido');
+ const delim=delimit.del,rows=[],row=[];let part='',quoted=false;
+ for(let i=0;i<raw.length;i++){
+   const ch=raw[i];
+   if(ch==='"'){
+     if(quoted&&raw[i+1]==='"'){part+='"';i++}
+     else quoted=!quoted;
+   }else if(ch===delim&&!quoted){row.push(part);part=''}
+   else if((ch==='\n'||ch==='\r')&&!quoted){
+     if(ch==='\r'&&raw[i+1]==='\n')i++;
+     row.push(part);part='';
+     if(row.some(x=>x.trim()))rows.push([...row]);
+     row.length=0;
+   }else part+=ch;
+ }
+ if(quoted)throw Error('Aspas não fechadas no CSV');
+ row.push(part);if(row.some(x=>x.trim()))rows.push(row);
+ if(rows.length<2)throw Error('Nenhum cliente encontrado');
+ const header=rows.shift().map(normalizeSearch);
+ const indexOf=(names)=>header.findIndex(x=>names.includes(x));
+ const nameIdx=indexOf(['nome','cliente','name','client']);
+ const addrIdx=indexOf(['endereco','endereco completo','address','rua','local']);
+ const phoneIdx=indexOf(['telefone','celular','phone','tel','contato']);
+ if(nameIdx<0)throw Error('Coluna Nome não encontrada');
+ const customers=[];
+ for(const cols of rows){
+   const nome=(cols[nameIdx]||'').trim().slice(0,150);
+   if(!nome)continue;
+   const endereco=addrIdx>=0?(cols[addrIdx]||'').trim().slice(0,500):'';
+   const tel=phoneIdx>=0?(cols[phoneIdx]||'').trim().slice(0,70):'';
+   customers.push({nome,endereco,tel});
+ }
+ if(!customers.length)throw Error('Nenhum nome válido encontrado');
+ return customers;
+}
+function countOutsideQuotes(line,delimiter){
+ let quoted=false,count=0;
+ for(let i=0;i<line.length;i++){
+   if(line[i]==='"'){
+     if(quoted&&line[i+1]==='"')i++;
+     else quoted=!quoted;
+   }else if(line[i]===delimiter&&!quoted)count++;
+ }
+ return count;
+}
+$('#mCli').onclick=()=>$('#clientfile').click();
+$('#clientfile').onchange=async e=>{
+ const f=e.target.files?.[0];if(!f)return;
+ try{
+   if(f.size>1024*1024)throw Error('CSV maior que 1 MB');
+   const records=parseClientCSV(await f.text());
+   if(!confirm('Importar '+records.length+' clientes? A agenda e os serviços atuais serão preservados.'))return;
+   const draft={...clients};
+   let added=0,updated=0;
+   for(const c of records){
+     const existing=Object.entries(draft).find(([k,v])=>normalizedKey(v?.nome||k)===normalizedKey(c.nome));
+     const key=existing?existing[0]:nk(c.nome),prev=draft[key]||{};
+     if(existing)updated++;else added++;
+     draft[key]={nome:c.nome,endereco:c.endereco||prev.endereco||'',tel:c.tel||prev.tel||''};
+   }
+   clients=draft;save();fillList();hideHints();mdl.close();
+   toast((added+updated)+' clientes disponíveis');
+ }catch(err){toast(err?.message||'CSV inválido')}
+ finally{e.target.value=''}
+};
+
 $('#mImp').onclick=()=>$('#file').click();
 $('#file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text()),a=Array.isArray(j)?j:j.items;if(!Array.isArray(a))throw 0;
   if(confirm(`Importar ${a.length} serviços? Isso substitui tudo que está no app.`)){items=a.map(x=>({...x,id:uid()}));clients=(!Array.isArray(j)&&j.clients)||{};items.forEach(upCl);save();mdl.close();render();toast('Importado')}}catch(x){toast('Arquivo inválido')}e.target.value=''};
