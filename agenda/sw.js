@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nfc-agenda-static-v9';
+const CACHE_NAME = 'nfc-agenda-static-v10';
 const CORE_ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS)).then(() => self.skipWaiting()));
