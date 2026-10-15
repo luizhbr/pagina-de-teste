@@ -51,6 +51,6 @@ Permitir que membros autorizados da equipe Next Finish Carpentry usem uma agenda
 - [ ] Integrar adaptador com eventos de salvar, editar e excluir, e sincronização com Realtime; tratar offline/conflitos.
 - [ ] Testar importação real com backup privado do usuário (não publicar dados em repositório).
 - [ ] Testar dois celulares antes de colocar em produção e preservar opção de rollback.
-- [ ] Revisão de segurança e fluxo de recuperação; só então abrir PR e fazer merge em `main`.
+- [ ] Revisão de segurança e fluxo de recuperação; só então aprovar e fazer merge do PR de rascunho em `main`.
 
 > Importante: esses arquivos **não ativam** login ou sincronização por si só e **não alteram** o aplicativo publicado. Eles preparam a arquitetura segura para a próxima etapa.
