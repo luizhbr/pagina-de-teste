@@ -139,6 +139,20 @@ main{max-width:780px;margin:auto;padding:12px}
 .suggestions button:active{background:var(--ln)}
 .suggestions b{font-size:13px;white-space:normal;overflow-wrap:anywhere}
 .suggestions small{font-size:11px;color:var(--mu);white-space:normal;overflow-wrap:anywhere}
+
+/* Status palette for scheduled work, completed projects, and lost opportunities */
+.status-legend{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:5px 0 0;padding:4px 1px;color:var(--mu);font-size:10px}
+.status-legend span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.legend-dot{display:inline-block;width:7px;height:7px;flex:none;border-radius:50%}
+.strip .evdots,.month-day .dots{display:flex;align-items:center;justify-content:center;gap:3px;min-height:6px}
+.strip .evdots i,.month-day .dots i{height:6px;width:6px;min-height:6px;border-radius:50%;display:inline-block}
+.row .pill{font-size:11px;border-radius:20px;max-width:116px;padding:0 8px;white-space:nowrap}
+.status-options{display:grid;grid-template-columns:1fr;gap:5px;margin-top:12px}
+.status-options button{min-height:43px;border:1px solid var(--ln);border-radius:10px;display:flex;align-items:center;gap:9px;text-align:left;background:var(--card);font-size:14px;font-weight:650}
+.status-options .legend-dot{width:9px;height:9px}
+.status-options button[aria-current=true]{border-color:var(--ac)}
+.status-explainer{margin:0;color:var(--mu);font-size:12px}
+#sdl{max-width:420px}
 </style>
 </head>
 <body>
@@ -157,12 +171,17 @@ main{max-width:780px;margin:auto;padding:12px}
     <button type="button" data-view="month" aria-pressed="false">Mês</button>
   </div>
   <div id="strip" class="strip week-view" aria-label="Calendário"></div>
+  <div class="status-legend" aria-label="Cores dos agendamentos">
+    <span><i class="legend-dot" style="background:#d8a52a"></i>Agendado / Orçamento</span>
+    <span><i class="legend-dot" style="background:#27985b"></i>Concluído</span>
+    <span><i class="legend-dot" style="background:#d64d49"></i>Não fechado</span>
+  </div>
   <button type="button" id="viewHandle" aria-label="Expandir calendário">
     <span class="chev" aria-hidden="true">⌃</span><span id="viewHint">Deslize para cima para expandir</span>
   </button>
   <div class="tools" id="tools" hidden>
     <input id="q" type="search" placeholder="Buscar cliente, rua, serviço">
-    <select id="f" aria-label="Status"><option value="todos">Todos</option><option>Pendente</option><option>Confirmado</option><option>Concluído</option></select>
+    <select id="f" aria-label="Status"><option value="todos">Todos</option><option>Pendente</option><option>Orçamento</option><option>Visita agendada</option><option>Em espera</option><option>Confirmado</option><option>Concluído</option><option>Não fechado</option></select>
   </div>
 </header>
 <main>
@@ -181,11 +200,16 @@ main{max-width:780px;margin:auto;padding:12px}
   <div class="suggestions" id="addressHints" aria-label="Endereços sugeridos" hidden></div>
   <label>Serviço<textarea name="servico" rows="2"></textarea></label>
   <div class="g2"><label>Telefone<input name="tel" type="tel" inputmode="tel"></label><label>Valor<input name="valor" placeholder="$150"></label></div>
-  <label>Status<select name="status"><option>Pendente</option><option>Confirmado</option><option>Concluído</option></select></label>
+  <label>Status<select name="status"><option>Pendente</option><option>Orçamento</option><option>Visita agendada</option><option>Em espera</option><option>Confirmado</option><option>Concluído</option><option>Não fechado</option></select></label>
   <label>Observações<textarea name="obs" rows="2"></textarea></label>
   <div class="fr"><button type="button" id="bCancel">Cancelar</button><button type="button" class="del" id="bDel">Excluir</button><button type="submit" class="pri">Salvar</button></div>
 </form></dialog>
-
+<dialog id="sdl">
+  <h3>Atualizar status</h3>
+  <p class="status-explainer">Amarelo: agendado, orçamento ou espera · Verde: concluído · Vermelho: não fechado</p>
+  <div id="statusOptions" class="status-options"></div>
+  <div class="fr"><button type="button" id="statusClose">Cancelar</button></div>
+</dialog>
 <dialog id="mdl"><div class="menu">
   <h3>Opções</h3>
   <button id="mConf">Confirmar todos do dia</button>
@@ -209,8 +233,11 @@ main{max-width:780px;margin:auto;padding:12px}
 <div id="toast"></div>
 
 <script>
-const $=s=>document.querySelector(s),KEY='agenda-nfc-public-v1',ST=['Pendente','Confirmado','Concluído'];
-const SC={Pendente:'#c47a12',Confirmado:'#2f6fb5','Concluído':'#2e7d4f'};
+const $=s=>document.querySelector(s),KEY='agenda-nfc-public-v1',ST=['Pendente','Orçamento','Visita agendada','Em espera','Confirmado','Concluído','Não fechado'];
+const SC={Pendente:'#c99112','Orçamento':'#c99112','Visita agendada':'#c99112','Em espera':'#c99112',Confirmado:'#c99112','Concluído':'#299a60','Não fechado':'#d64d49'};
+const DOT={pending:'#d8a52a',done:'#27985b',lost:'#d64d49'};
+function tone(i){const s=String(i.status||'');return s==='Concluído'?'done':s==='Não fechado'?'lost':'pending'}
+function eventDots(events){return events.slice(0,3).map(i=>'<i class="event-dot" style="background-color:'+DOT[tone(i)]+'"></i>').join('')}
 const iso=d=>{const z=new Date(d.getTime()-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
 const prs=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
 const mon=d=>{const x=new Date(d);x.setDate(x.getDate()-x.getDay());x.setHours(0,0,0,0);return x};
@@ -228,11 +255,11 @@ function upCl(i){if(!i.cliente)return;const k=nk(i.cliente),c=clients[k]||{};cli
 if(!items)items=SEED;
 if(!clients){clients={};items.forEach(upCl)}
 save();
-const S={ws:iso(mon(new Date())),sel:iso(new Date()),q:'',f:'todos',edit:null,open:null,view:['week','month'].includes(P.view)?P.view:'week',scope:P.view==='month'?'period':'day'};
+const S={statusId:null,ws:iso(mon(new Date())),sel:iso(new Date()),q:'',f:'todos',edit:null,open:null,view:['week','month'].includes(P.view)?P.view:'week',scope:P.view==='month'?'period':'day'};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(items));localStorage.setItem(KEY+'-p',JSON.stringify(P));localStorage.setItem(KEY+'-c',JSON.stringify(clients))}catch(e){toast('Não foi possível salvar')}}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1800)}
 const key=i=>i.data+(i.hora||'99:99');
-const late=i=>{if(i.status==='Concluído')return false;const d=prs(i.data);if(i.hora){const[h,m]=i.hora.split(':');d.setHours(+h,+m)}else d.setHours(23,59);return d<new Date()};
+const late=i=>{if(i.status==='Concluído'||i.status==='Não fechado')return false;const d=prs(i.data);if(i.hora){const[h,m]=i.hora.split(':');d.setHours(+h,+m)}else d.setHours(23,59);return d<new Date()};
 const h12=t=>{const[h,m]=t.split(':').map(Number);return((h+11)%12+1)+':'+String(m).padStart(2,'0')+(h<12?' AM':' PM')};
 
 function setView(next){
@@ -292,14 +319,18 @@ function render(){
  $('#viewHint').textContent=hint;
  $('#viewHandle').setAttribute('aria-label',hint+'; deslize para cima ou para baixo');
  $('#viewHandle .chev').textContent=mode==='week'?'⌃':'⌄';
- const counts=new Map();
- for(const item of items)counts.set(item.data,(counts.get(item.data)||0)+1);
+ const dayEvents=new Map();
+ for(const item of items){
+   if(!dayEvents.has(item.data))dayEvents.set(item.data,[]);
+   dayEvents.get(item.data).push(item);
+ }
+ const counts=new Map([...dayEvents].map(([day,events])=>[day,events.length]));
  let markup='';
  if(mode==='week'){
    for(let n=0;n<7;n++){
      const d=new Date(ws);d.setDate(d.getDate()+n);
      const k=iso(d),c=counts.get(k)||0;
-     markup+=`<button type="button" aria-label="${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${c?' · '+c+' serviços':''}" data-d="${k}" class="${k===today?'hoje ':''}${k===S.sel?'sel':''}"><span>${fmt(d,{weekday:'short'}).replace('.','')}</span><b>${d.getDate()}</b>${c?'<i></i>':'<i class="z"></i>'}</button>`;
+     markup+=`<button type="button" aria-label="${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${c?' · '+c+' serviços':''}" data-d="${k}" class="${k===today?'hoje ':''}${k===S.sel?'sel':''}"><span>${fmt(d,{weekday:'short'}).replace('.','')}</span><b>${d.getDate()}</b>${c?'<span class="evdots">'+eventDots(dayEvents.get(k))+'</span>':'<span class="evdots"></span>'}</button>`;
    }
  } else if(mode==='month'){
    const days=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -311,7 +342,7 @@ function render(){
      const d=new Date(yr,mn,p-offset+1);
      const k=iso(d),c=counts.get(k)||0;
      const other=d.getMonth()!==mn;
-     markup+=`<button type="button" data-d="${k}" aria-label="${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${c?', '+c+' serviço'+(c>1?'s':''):''}" class="month-day${other?' other':''}${k===today?' today':''}${k===S.sel?' selected':''}"><span>${d.getDate()}</span><span class="dots">${c?'<i></i>':''}${c>1?'<i></i>':''}${c>2?'<i></i>':''}</span>${c>3?`<em class="ncount">${c}</em>`:''}</button>`;
+     markup+=`<button type="button" data-d="${k}" aria-label="${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${c?', '+c+' serviço'+(c>1?'s':''):''}" class="month-day${other?' other':''}${k===today?' today':''}${k===S.sel?' selected':''}"><span>${d.getDate()}</span><span class="dots">${c?eventDots(dayEvents.get(k)):''}</span>${c>3?`<em class="ncount">${c}</em>`:''}</button>`;
    }
  }
  const calendar=$('#strip');calendar.className='strip '+mode+'-view';calendar.innerHTML=markup;
@@ -340,9 +371,9 @@ function render(){
    }
    const o=S.open===i.id;
    rows+=`<div class="row" data-id="${esc(i.id)}">
-     <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora||'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><button type="button" class="pill" data-a="st" style="color:${SC[i.status]||SC.Pendente}">${esc(i.status)}</button></div>
+     <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora||'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><button type="button" class="pill" data-a="st" style="color:${SC[i.status]||SC.Pendente};border-color:${SC[i.status]||SC.Pendente}">${esc(i.status)}</button></div>
      ${o?`<div class="dt">${i.endereco?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco)}">${esc(i.endereco)}</a>`:''}${i.servico?`<p>${esc(i.servico)}</p>`:''}${i.valor?`<p><b>${esc(i.valor)}</b></p>`:''}${i.obs?`<p class="mu">${esc(i.obs)}</p>`:''}
-       <div class="ac"><button type="button" class="wa" data-a="wa">WhatsApp</button><button type="button" data-a="rp">Repetir</button><button type="button" data-a="ed">Editar</button></div></div>`:''}
+       <div class="ac"><button type="button" class="wa" data-a="sms">SMS</button><button type="button" data-a="rp">Repetir</button><button type="button" data-a="ed">Editar</button></div></div>`:''}
    </div>`;
  }
  $('#list').innerHTML=L.length?`<div class="box">${rows}</div>`:`<div class="vazio">${q?'Nada encontrado.':'Nenhum serviço neste período.'}</div>`;
