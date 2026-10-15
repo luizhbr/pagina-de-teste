@@ -421,7 +421,9 @@ $('#viewbar').onclick=e=>{
   const b=e.target.closest('button[data-view]');
   if(b)setView(b.dataset.view);
 };
+let ignoreHandleClickUntil=0;
 $('#viewHandle').onclick=()=>{
+  if(Date.now()<ignoreHandleClickUntil)return;
   const values=['week','month','year'],i=values.indexOf(S.view);
   setView(values[i===2?1:i+1]);
 };
@@ -436,7 +438,7 @@ $('#viewHandle').addEventListener('touchend',e=>{
   if(Math.abs(dy)<25||Math.abs(dy)<Math.abs(dx))return;
   const choices=['week','month','year'],idx=choices.indexOf(S.view);
   const next=dy<0?Math.min(idx+1,2):Math.max(idx-1,0);
-  if(next!==idx)setView(choices[next]);
+  if(next!==idx){ignoreHandleClickUntil=Date.now()+600;setView(choices[next]);}
 },{passive:true});
 $('#bPrev').onclick=()=>moveBy(-1);
 $('#bNext').onclick=()=>moveBy(1);
