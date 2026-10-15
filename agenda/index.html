@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f5f6f3">
+<meta name="theme-color" content="#f4b91b">
 <meta name="robots" content="noindex,nofollow">
 <meta name="application-name" content="Agenda NFC">
 <meta name="apple-mobile-web-app-title" content="Agenda NFC">
@@ -14,9 +14,9 @@
 <link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png">
 <title>Agenda · Next Finish</title>
 <style>
-:root{--bg:#f5f6f3;--card:#fff;--tx:#1b2620;--mu:#7a867f;--ac:#2f5d46;--on:#fff;--ln:#e3e7e1;--rd:#c0392b;--wa:#1b8f4e}
-:root[data-theme=dark]{--bg:#0f1512;--card:#161e19;--tx:#e8eee9;--mu:#8a988f;--ac:#6fb48f;--on:#0f1512;--ln:#25312a;--rd:#e5776a;--wa:#3cc17a}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f1512;--card:#161e19;--tx:#e8eee9;--mu:#8a988f;--ac:#6fb48f;--on:#0f1512;--ln:#25312a;--rd:#e5776a;--wa:#3cc17a}}
+:root{--bg:#f7f7f5;--card:#fff;--tx:#191919;--mu:#666b69;--ac:#f4b91b;--on:#171717;--ln:#e6e7e4;--rd:#bf392c;--wa:#158547}
+:root[data-theme=dark]{--bg:#101113;--card:#1b1c1e;--tx:#f1f2f1;--mu:#a6aaa7;--ac:#f4b91b;--on:#171717;--ln:#343638;--rd:#eb8076;--wa:#3cc17a}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101113;--card:#1b1c1e;--tx:#f1f2f1;--mu:#a6aaa7;--ac:#f4b91b;--on:#171717;--ln:#343638;--rd:#eb8076;--wa:#3cc17a}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,Roboto,sans-serif;padding-bottom:90px}
@@ -74,15 +74,95 @@ label input,label select,label textarea{display:block;width:100%;min-height:42px
 .menu button{display:block;width:100%;text-align:left;border-top:1px solid var(--ln);border-radius:0;min-height:46px}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:8px 14px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9;font-size:14px}
 #toast.on{opacity:1}
+
+/* NFC branding and three-view calendar */
+body{background:var(--bg);letter-spacing:-.012em}
+header{max-width:780px;margin:0 auto;padding:12px 12px 8px;border-bottom:1px solid var(--ln);box-shadow:0 3px 14px #00000007}
+main{max-width:780px;margin:auto;padding:12px}
+.brandbar{display:flex;align-items:center;gap:10px;padding:1px 2px 10px}
+.brandbar img{width:37px;height:37px;object-fit:contain;border-radius:10px}
+.brandtitle{display:flex;flex-direction:column;gap:0;line-height:1.18}
+.brandtitle strong{font-size:15px;letter-spacing:-.02em}
+.brandtitle small{font-size:11px;color:var(--mu);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.brandmark{margin-left:auto;font-size:10px;letter-spacing:.12em;font-weight:800;color:var(--mu)}
+.nav{gap:2px;margin-bottom:7px}
+.nav button{border-radius:12px}
+#range{font-size:17px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;min-width:0}
+#bHoje{color:var(--tx);background:var(--card);border:1px solid var(--ln);padding:0 10px;border-radius:10px;font-size:12px;min-height:36px}
+#bSearch,#bMenu{font-size:22px}
+.viewbar{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;background:var(--ln);border-radius:13px;margin:2px 0 10px}
+.viewbar button{min-height:35px;border-radius:10px;font-size:13px;font-weight:700;color:var(--mu)}
+.viewbar button.active{background:var(--ac);color:#161616;box-shadow:0 1px 3px #0002}
+#strip{width:100%}
+#strip.week-view{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+#strip.week-view button{min-width:0;min-height:67px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:12px}
+#strip.week-view button span{font-size:11px}
+#strip.week-view button b{font-size:20px}
+#strip.week-view .sel{background:var(--ac);color:#151515}
+#strip.week-view .sel b,#strip.week-view .sel span{color:#151515}
+#strip.week-view .sel i{background:#151515}
+#strip.week-view .hoje:not(.sel) b{color:#bd8a00}
+#strip.month-view{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;padding:1px 0}
+.month-wd{text-align:center;font-size:10px;color:var(--mu);font-weight:700;text-transform:uppercase;padding:3px 0 6px}
+.month-day{position:relative;min-width:0;height:53px;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px 0;font-weight:700;font-size:14px}
+.month-day.other{opacity:.38}
+.month-day.today:not(.selected){border:1px solid var(--ac)}
+.month-day.selected{background:var(--ac);color:#151515}
+.month-day .dots{display:flex;justify-content:center;gap:3px;min-height:5px}
+.month-day .dots i{height:5px;width:5px;border-radius:50%;background:#a97e08}
+.month-day.selected .dots i{background:#151515}
+.month-day .ncount{position:absolute;right:3px;top:2px;font-size:9px;color:var(--mu);font-style:normal}
+.month-day.selected .ncount{color:#151515}
+#strip.year-view{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-top:1px}
+.year-month{border:1px solid var(--ln);background:var(--card);border-radius:14px;padding:11px 9px 10px;text-align:left;min-width:0;height:auto}
+.year-month:active{opacity:.8}
+.year-month .ym-title{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:13px;margin-bottom:9px;text-transform:capitalize}
+.year-month .ym-count{color:#986f06;background:#fff6d4;padding:3px 6px;border-radius:7px;font-size:10px}
+:root[data-theme=dark] .year-month .ym-count{background:#493810;color:#ffd961}
+.mini-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.mini-grid span{font-size:9px;text-align:center;color:var(--mu);height:16px;line-height:16px;border-radius:4px;font-weight:600}
+.mini-grid .md{color:var(--tx)}
+.mini-grid .md.has{background:var(--ac);color:#151515}
+.mini-grid .md.now{outline:1px solid #c19620}
+#viewHandle{display:flex;align-items:center;justify-content:center;width:100%;min-height:37px;gap:7px;border-radius:12px;color:var(--mu);font-size:12px;touch-action:pan-x;user-select:none}
+#viewHandle .chev{color:var(--tx);font-size:20px;line-height:0}
+#viewHandle:active{background:var(--ln)}
+.dh{margin-top:12px;flex-wrap:wrap}
+.dh h2{font-size:16px;min-width:140px}
+.dh .scope{font-size:12px;border:1px solid var(--ln);border-radius:10px;padding:0 8px;background:var(--card);min-height:34px}
+.date-group{padding:8px 12px 5px;font-size:11px;font-weight:800;text-transform:capitalize;letter-spacing:.02em;color:var(--mu);background:var(--bg);border-top:1px solid var(--ln)}
+.date-group:first-child{border-top:none}
+.row{background:var(--card)}
+.row .pill{background:transparent}
+.fab{background:var(--ac);color:#151515;font-weight:700;width:56px;height:56px;border-radius:18px;box-shadow:0 5px 18px #0003}
+.dt a,.dh button:not(.scope){color:var(--tx)}
+.pri{background:var(--ac);color:#151515}
+@media(min-width:660px){#strip.year-view{grid-template-columns:repeat(3,minmax(0,1fr))}.year-month{padding:12px}.month-day{height:62px}}
+@media(max-width:380px){.brandmark{display:none}#range{font-size:14px}.nav button{min-width:34px}.year-month{padding:7px 5px}.mini-grid span{font-size:8px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
 </style>
 </head>
 <body>
 <header>
+  <div class="brandbar">
+    <img src="./icon-192.png" alt="" aria-hidden="true">
+    <div class="brandtitle"><strong>Next Finish Carpentry</strong><small>Agenda de serviços</small></div>
+    <span class="brandmark">NFC · OHIO</span>
+  </div>
   <div class="nav">
     <button id="bPrev" aria-label="Semana anterior">‹</button><div id="range"></div><button id="bNext" aria-label="Próxima semana">›</button>
     <button id="bHoje">Hoje</button><button id="bSearch" aria-label="Buscar">⌕</button><button id="bMenu" aria-label="Menu">⋯</button>
   </div>
-  <div class="strip" id="strip"></div>
+  <div class="viewbar" id="viewbar" role="group" aria-label="Visualização da agenda">
+    <button type="button" data-view="week" aria-pressed="true">Semana</button>
+    <button type="button" data-view="month" aria-pressed="false">Mês</button>
+    <button type="button" data-view="year" aria-pressed="false">Ano</button>
+  </div>
+  <div id="strip" class="strip week-view" aria-label="Calendário"></div>
+  <button type="button" id="viewHandle" aria-label="Expandir calendário">
+    <span class="chev" aria-hidden="true">⌃</span><span id="viewHint">Deslize para cima para expandir</span>
+  </button>
   <div class="tools" id="tools" hidden>
     <input id="q" type="search" placeholder="Buscar cliente, rua, serviço">
     <select id="f" aria-label="Status"><option value="todos">Todos</option><option>Pendente</option><option>Confirmado</option><option>Concluído</option></select>
@@ -147,39 +227,162 @@ function upCl(i){if(!i.cliente)return;const k=nk(i.cliente),c=clients[k]||{};cli
 if(!items)items=SEED;
 if(!clients){clients={};items.forEach(upCl)}
 save();
-const S={ws:iso(mon(new Date())),sel:iso(new Date()),q:'',f:'todos',edit:null,open:null};
+const S={ws:iso(mon(new Date())),sel:iso(new Date()),q:'',f:'todos',edit:null,open:null,view:['week','month','year'].includes(P.view)?P.view:'week',scope:P.view==='month'||P.view==='year'?'period':'day'};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(items));localStorage.setItem(KEY+'-p',JSON.stringify(P));localStorage.setItem(KEY+'-c',JSON.stringify(clients))}catch(e){toast('Não foi possível salvar')}}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1800)}
 const key=i=>i.data+(i.hora||'99:99');
 const late=i=>{if(i.status==='Concluído')return false;const d=prs(i.data);if(i.hora){const[h,m]=i.hora.split(':');d.setHours(+h,+m)}else d.setHours(23,59);return d<new Date()};
 const h12=t=>{const[h,m]=t.split(':').map(Number);return((h+11)%12+1)+':'+String(m).padStart(2,'0')+(h<12?' AM':' PM')};
 
-function render(){
-  document.documentElement.dataset.theme=P.theme;
-  const ws=prs(S.ws),we=new Date(ws);we.setDate(we.getDate()+6);
-  $('#range').textContent=fmt(ws,{day:'numeric'})+'–'+fmt(we,{day:'numeric',month:'short'}).replace('.','');
-  const hoje=iso(new Date());let st='';
-  for(let n=0;n<7;n++){const d=new Date(ws);d.setDate(d.getDate()+n);const k=iso(d),c=items.some(i=>i.data===k);
-    st+=`<button data-d="${k}" class="${k===hoje?'hoje ':''}${k===S.sel?'sel':''}"><span>${fmt(d,{weekday:'short'}).replace('.','')}</span><b>${d.getDate()}</b>${c?'<i></i>':'<i class="z"></i>'}</button>`}
-  $('#strip').innerHTML=st;
-  const q=S.q.trim().toLowerCase();
-  let L=items.filter(i=>q?(i.cliente+' '+i.endereco+' '+i.servico+' '+i.tel).toLowerCase().includes(q):i.data===S.sel);
-  if(S.f!=='todos')L=L.filter(i=>i.status===S.f);
-  L.sort((a,b)=>key(a).localeCompare(key(b)));
-  $('#dh').innerHTML=q?`<h2>Resultados</h2><span>${L.length}</span>`:`<h2>${fmt(prs(S.sel),{weekday:'long',day:'numeric',month:'long'})}</h2><span>${L.length}</span><button data-a="cd">Copiar</button>`;
-  const old=items.length&&Date.now()-P.bk>7*864e5;
-  $('#bkp').innerHTML=old?`<div class="bk"><span>Sem backup há mais de 7 dias.</span><button data-a="bk">Fazer backup</button></div>`:'';
-  $('#list').innerHTML=L.length?'<div class="box">'+L.map(i=>{const o=S.open===i.id;return`<div class="row" data-id="${i.id}">
-    <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora||'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${q?fmt(prs(i.data),{day:'2-digit',month:'2-digit'})+' · ':''}${esc(i.servico||i.endereco)}</small>`}</div><button class="pill" data-a="st" style="color:${SC[i.status]}">${i.status}</button></div>
-    ${o?`<div class="dt">${i.endereco?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco)}">${esc(i.endereco)}</a>`:''}${i.servico?`<p>${esc(i.servico)}</p>`:''}${i.valor?`<p><b>${esc(i.valor)}</b></p>`:''}${i.obs?`<p class="mu">${esc(i.obs)}</p>`:''}
-      <div class="ac"><button class="wa" data-a="wa">WhatsApp</button><button data-a="rp">Repetir</button><button data-a="ed">Editar</button></div></div>`:''}
-  </div>`}).join('')+'</div>':`<div class="vazio">${q?'Nada encontrado.':'Dia livre.'}</div>`;
+function setView(next){
+  const choices=['week','month','year'];
+  if(!choices.includes(next))return;
+  S.view=next;
+  S.scope=next==='week'?'day':'period';
+  S.open=null;
+  P.view=next;
+  save();
+  render();
 }
+
+function goToDay(day){
+  S.sel=day;
+  S.ws=iso(mon(prs(day)));
+  S.scope='day';
+  S.open=null;
+  S.q='';
+  $('#q').value='';
+  render();
+}
+
+function gotoMonth(monthIndex){
+  const year=prs(S.sel).getFullYear();
+  const d=new Date(year,monthIndex,1);
+  S.sel=iso(d);
+  S.ws=iso(mon(d));
+  setView('month');
+}
+
+function moveBy(n){
+  const d=prs(S.sel);
+  if(S.view==='week') d.setDate(d.getDate()+n*7);
+  else {
+    const day=d.getDate();
+    d.setDate(1);
+    if(S.view==='month')d.setMonth(d.getMonth()+n);
+    else d.setFullYear(d.getFullYear()+n);
+    const finalDay=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+    d.setDate(Math.min(day,finalDay));
+  }
+  S.sel=iso(d);S.ws=iso(mon(d));S.open=null;render();
+}
+
+function render(){
+ document.documentElement.dataset.theme=P.theme;
+ const today=iso(new Date()),selected=prs(S.sel),ws=prs(S.ws);
+ const we=new Date(ws);we.setDate(we.getDate()+6);
+ const mode=S.view;
+ const yr=selected.getFullYear(),mn=selected.getMonth();
+ const monthKey=S.sel.slice(0,7),yearKey=S.sel.slice(0,4);
+ const monthLabel=fmt(selected,{month:'long',year:'numeric'});
+ $('#range').textContent=mode==='week'
+   ?fmt(ws,{day:'numeric',month:'short'})+' – '+fmt(we,{day:'numeric',month:'short'})
+   :mode==='month'?monthLabel[0].toUpperCase()+monthLabel.slice(1):String(yr);
+ $('#bPrev').setAttribute('aria-label',mode==='week'?'Semana anterior':mode==='month'?'Mês anterior':'Ano anterior');
+ $('#bNext').setAttribute('aria-label',mode==='week'?'Próxima semana':mode==='month'?'Próximo mês':'Próximo ano');
+ document.querySelectorAll('#viewbar button').forEach(b=>{
+   const active=b.dataset.view===mode;
+   b.classList.toggle('active',active);
+   b.setAttribute('aria-pressed',String(active));
+ });
+ const hint=mode==='week'?'Expandir para o mês':mode==='month'?'Expandir para o ano':'Recolher para o mês';
+ $('#viewHint').textContent=hint;
+ $('#viewHandle').setAttribute('aria-label',hint+'; deslize para cima ou para baixo');
+ $('#viewHandle .chev').textContent=mode==='year'?'⌄':'⌃';
+ const counts=new Map();
+ for(const item of items)counts.set(item.data,(counts.get(item.data)||0)+1);
+ let markup='';
+ if(mode==='week'){
+   for(let n=0;n<7;n++){
+     const d=new Date(ws);d.setDate(d.getDate()+n);
+     const k=iso(d),c=counts.get(k)||0;
+     markup+=`<button type="button" aria-label="${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${c?' · '+c+' serviços':''}" data-d="${k}" class="${k===today?'hoje ':''}${k===S.sel?'sel':''}"><span>${fmt(d,{weekday:'short'}).replace('.','')}</span><b>${d.getDate()}</b>${c?'<i></i>':'<i class="z"></i>'}</button>`;
+   }
+ } else if(mode==='month'){
+   const days=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+   markup=days.map(d=>`<span class="month-wd">${d}</span>`).join('');
+   const offset=(new Date(yr,mn,1).getDay()+6)%7;
+   const total=new Date(yr,mn+1,0).getDate();
+   const cells=Math.ceil((offset+total)/7)*7;
+   for(let p=0;p<cells;p++){
+     const d=new Date(yr,mn,p-offset+1);
+     const k=iso(d),c=counts.get(k)||0;
+     const other=d.getMonth()!==mn;
+     markup+=`<button type="button" data-d="${k}" aria-label="${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${c?', '+c+' serviço'+(c>1?'s':''):''}" class="month-day${other?' other':''}${k===today?' today':''}${k===S.sel?' selected':''}"><span>${d.getDate()}</span><span class="dots">${c?'<i></i>':''}${c>1?'<i></i>':''}${c>2?'<i></i>':''}</span>${c>3?`<em class="ncount">${c}</em>`:''}</button>`;
+   }
+ } else {
+   const weekdays=['S','T','Q','Q','S','S','D'];
+   for(let m=0;m<12;m++){
+     const d=new Date(yr,m,1);
+     const keymonth=iso(d).slice(0,7);
+     const count=items.filter(i=>i.data.startsWith(keymonth)).length;
+     const first=(d.getDay()+6)%7,days=new Date(yr,m+1,0).getDate();
+     let cells=weekdays.map(x=>`<span>${x}</span>`).join('');
+     for(let p=0;p<first;p++)cells+='<span></span>';
+     for(let day=1;day<=days;day++){
+       const k=iso(new Date(yr,m,day));
+       cells+=`<span class="md${counts.has(k)?' has':''}${k===today?' now':''}">${day}</span>`;
+     }
+     const name=fmt(d,{month:'long'});
+     markup+=`<button type="button" data-month="${m}" class="year-month" aria-label="${name} de ${yr}, ${count} serviço${count===1?'':'s'}. Abrir mês"><span class="ym-title"><span>${name}</span>${count?`<span class="ym-count">${count} ${count===1?'serviço':'serviços'}</span>`:''}</span><span class="mini-grid">${cells}</span></button>`;
+   }
+ }
+ const calendar=$('#strip');calendar.className='strip '+mode+'-view';calendar.innerHTML=markup;
+ const q=S.q.trim().toLowerCase();
+ let L=items.filter(i=>{
+   if(q)return(i.cliente+' '+i.endereco+' '+i.servico+' '+i.tel).toLowerCase().includes(q);
+   if(S.scope==='period'&&mode==='month')return i.data.startsWith(monthKey);
+   if(S.scope==='period'&&mode==='year')return i.data.startsWith(yearKey);
+   return i.data===S.sel;
+ });
+ if(S.f!=='todos')L=L.filter(i=>i.status===S.f);
+ L.sort((a,b)=>(iKey(a)).localeCompare(iKey(b)));
+ const isPeriod=!q&&S.scope==='period'&&mode!=='week';
+ const periodTitle=mode==='month'?'Serviços do mês':'Serviços do ano';
+ const dayTitle=fmt(prs(S.sel),{weekday:'long',day:'numeric',month:'long'});
+ const label=q?'Resultados':isPeriod?periodTitle:dayTitle;
+ const scopeButton=!q&&mode!=='week'
+    ?`<button type="button" class="scope" data-a="scope">${isPeriod?'Ver dia':'Ver '+(mode==='year'?'ano':'mês')+' completo'}</button>`:'';
+ $('#dh').innerHTML=`<h2>${label}</h2><span>${L.length} ${L.length===1?'serviço':'serviços'}</span>${scopeButton}<button type="button" data-a="cd">Copiar</button>`;
+ const old=items.length&&Date.now()-P.bk>7*864e5;
+ $('#bkp').innerHTML=old?`<div class="bk"><span>Sem backup há mais de 7 dias.</span><button data-a="bk">Fazer backup</button></div>`:'';
+ let rows='',lastDate='';
+ for(const i of L){
+   if((isPeriod||q)&&i.data!==lastDate){
+     rows+=`<div class="date-group">${fmt(prs(i.data),{weekday:'long',day:'numeric',month:'long',year:mode==='year'?'numeric':undefined})}</div>`;
+     lastDate=i.data;
+   }
+   const o=S.open===i.id;
+   rows+=`<div class="row" data-id="${esc(i.id)}">
+     <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora||'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><button type="button" class="pill" data-a="st" style="color:${SC[i.status]||SC.Pendente}">${esc(i.status)}</button></div>
+     ${o?`<div class="dt">${i.endereco?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco)}">${esc(i.endereco)}</a>`:''}${i.servico?`<p>${esc(i.servico)}</p>`:''}${i.valor?`<p><b>${esc(i.valor)}</b></p>`:''}${i.obs?`<p class="mu">${esc(i.obs)}</p>`:''}
+       <div class="ac"><button type="button" class="wa" data-a="wa">WhatsApp</button><button type="button" data-a="rp">Repetir</button><button type="button" data-a="ed">Editar</button></div></div>`:''}
+   </div>`;
+ }
+ $('#list').innerHTML=L.length?`<div class="box">${rows}</div>`:`<div class="vazio">${q?'Nada encontrado.':'Nenhum serviço neste período.'}</div>`;
+}
+
+function iKey(i){return (i.data||'')+(i.hora||'99:99')}
 
 function blk(i){return[`${i.hora||'--:--'} – ${i.cliente}`,i.endereco&&'📍 '+i.endereco,i.servico&&'🔧 '+i.servico,i.valor&&'💲 '+i.valor,i.tel&&'📞 '+i.tel].filter(Boolean).join('\n')}
 const dTitle=k=>{const t=fmt(prs(k),{weekday:'long',day:'2-digit',month:'2-digit'});return'📅 '+t[0].toUpperCase()+t.slice(1)};
 function dayText(k){const L=items.filter(i=>i.data===k).sort((a,b)=>key(a).localeCompare(key(b)));return dTitle(k)+'\n\n'+(L.length?L.map(blk).join('\n\n'):'Sem serviços')}
 function weekText(){const ws=prs(S.ws),o=[];for(let n=0;n<7;n++){const d=new Date(ws);d.setDate(d.getDate()+n);const k=iso(d);if(items.some(i=>i.data===k))o.push(dayText(k))}return o.join('\n\n———\n\n')||'Sem serviços na semana'}
+function periodText(){
+ const scope=S.view==='month'?S.sel.slice(0,7):S.sel.slice(0,4);
+ const events=items.filter(i=>i.data.startsWith(scope)).sort((a,b)=>iKey(a).localeCompare(iKey(b)));
+ return events.length?events.map(i=>dTitle(i.data)+'\n'+blk(i)).join('\n\n———\n\n'):'Sem serviços no período';
+}
 async function copy(t,ok){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast(ok)}
 
 function msg(i){const d=prs(i.data);
@@ -204,11 +407,40 @@ $('#list').onclick=e=>{const row=e.target.closest('.row');if(!row)return;const i
   if(!b){if(e.target.closest('a'))return;S.open=S.open===i.id?null:i.id;return render()}
   if(b.dataset.a==='st'){i.status=ST[(ST.indexOf(i.status)+1)%3];save();render()}
   else if(b.dataset.a==='wa')wa(i);else if(b.dataset.a==='ed')openForm(i);else if(b.dataset.a==='rp')openForm({cliente:i.cliente,tel:i.tel,endereco:i.endereco,data:S.sel,status:'Pendente'},true)};
-$('#dh').onclick=e=>{if(e.target.dataset.a==='cd')copy(dayText(S.sel),'Dia copiado')};
-$('#strip').onclick=e=>{const b=e.target.closest('button');if(b){S.sel=b.dataset.d;S.open=null;$('#q').value='';S.q='';render()}};
-const shift=n=>{const d=prs(S.ws);d.setDate(d.getDate()+n);S.ws=iso(d);const s=prs(S.sel);s.setDate(s.getDate()+n);S.sel=iso(s);S.open=null;render()};
-$('#bPrev').onclick=()=>shift(-7);$('#bNext').onclick=()=>shift(7);
-$('#bHoje').onclick=()=>{S.ws=iso(mon(new Date()));S.sel=iso(new Date());$('#q').value='';S.q='';S.open=null;render()};
+$('#dh').onclick=e=>{
+  if(e.target.dataset.a==='cd')copy(S.scope==='period'&&S.view!=='week'?periodText() : dayText(S.sel),'Agenda copiada');
+  if(e.target.dataset.a==='scope'){S.scope=S.scope==='period'?'day':'period';S.open=null;render()}
+};
+
+$('#strip').onclick=e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.d)goToDay(b.dataset.d);
+  else if(b.dataset.month!==undefined)gotoMonth(Number(b.dataset.month));
+};
+$('#viewbar').onclick=e=>{
+  const b=e.target.closest('button[data-view]');
+  if(b)setView(b.dataset.view);
+};
+$('#viewHandle').onclick=()=>{
+  const values=['week','month','year'],i=values.indexOf(S.view);
+  setView(values[i===2?1:i+1]);
+};
+let gestureStart=null;
+$('#viewHandle').addEventListener('touchstart',e=>{
+  if(e.touches.length===1)gestureStart={x:e.touches[0].clientX,y:e.touches[0].clientY};
+},{passive:true});
+$('#viewHandle').addEventListener('touchend',e=>{
+  if(!gestureStart||!e.changedTouches.length)return;
+  const dy=e.changedTouches[0].clientY-gestureStart.y;
+  const dx=e.changedTouches[0].clientX-gestureStart.x;gestureStart=null;
+  if(Math.abs(dy)<25||Math.abs(dy)<Math.abs(dx))return;
+  const choices=['week','month','year'],idx=choices.indexOf(S.view);
+  const next=dy<0?Math.min(idx+1,2):Math.max(idx-1,0);
+  if(next!==idx)setView(choices[next]);
+},{passive:true});
+$('#bPrev').onclick=()=>moveBy(-1);
+$('#bNext').onclick=()=>moveBy(1);
+$('#bHoje').onclick=()=>{S.sel=iso(new Date());S.ws=iso(mon(new Date()));S.scope=S.view==='week'?'day':'period';$('#q').value='';S.q='';S.open=null;render()};
 $('#bSearch').onclick=()=>{const t=$('#tools');t.hidden=!t.hidden;if(!t.hidden)$('#q').focus();else{$('#q').value='';S.q='';S.f='todos';$('#f').value='todos';render()}};
 $('#q').oninput=e=>{S.q=e.target.value;render()};$('#f').onchange=e=>{S.f=e.target.value;render()};
 
