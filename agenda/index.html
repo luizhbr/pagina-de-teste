@@ -440,30 +440,34 @@ function amount(v){
  const value=String(v||'').trim();
  return value?(value.startsWith('$')?value:'$'+value):'';
 }
+const APPOINTMENT_DIVIDER='\n\n────────────────────\n\n';
 function blk(i){
  const date=fmt(prs(i.data),{day:'2-digit',month:'2-digit',year:'numeric'});
  return [
    '📅 '+date+(i.hora?' - '+i.hora:''),
-   '**'+String(i.cliente||'').trim()+'**',
+   '*'+String(i.cliente||'').trim()+'*',
    i.tel||'',
    i.endereco?'📍 '+i.endereco:'',
-   i.servico||'',
+   i.servico?'_'+String(i.servico).trim()+'_':'',
    amount(i.valor)
- ].filter(Boolean).join('\n');
+ ].filter(Boolean).join('\n\n');
+}
+function appointmentText(entries){
+ return entries.map(blk).join(APPOINTMENT_DIVIDER);
 }
 function dayText(k){
  const entries=items.filter(i=>i.data===k).sort((a,b)=>iKey(a).localeCompare(iKey(b)));
- return entries.length?entries.map(blk).join('\n\n'):'📅 '+fmt(prs(k),{day:'2-digit',month:'2-digit',year:'numeric'})+'\nSem serviços';
+ return entries.length?appointmentText(entries):'📅 '+fmt(prs(k),{day:'2-digit',month:'2-digit',year:'numeric'})+'\n\nSem serviços';
 }
 function weekText(){
  const start=prs(S.ws),end=new Date(start);end.setDate(end.getDate()+6);
  const entries=items.filter(i=>i.data>=iso(start)&&i.data<=iso(end)).sort((a,b)=>iKey(a).localeCompare(iKey(b)));
- return entries.length?entries.map(blk).join('\n\n'):'Sem serviços na semana';
+ return entries.length?appointmentText(entries):'Sem serviços na semana';
 }
 function periodText(){
  const period=S.sel.slice(0,7);
  const entries=items.filter(i=>i.data.startsWith(period)).sort((a,b)=>iKey(a).localeCompare(iKey(b)));
- return entries.length?entries.map(blk).join('\n\n'):'Sem serviços no período';
+ return entries.length?appointmentText(entries):'Sem serviços no período';
 }
 
 async function copy(t,ok){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast(ok)}
