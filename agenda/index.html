@@ -90,7 +90,7 @@ main{max-width:780px;margin:auto;padding:12px}
 #range{font-size:17px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;min-width:0}
 #bHoje{color:var(--tx);background:var(--card);border:1px solid var(--ln);padding:0 10px;border-radius:10px;font-size:12px;min-height:36px}
 #bSearch,#bMenu{font-size:22px}
-.viewbar{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;background:var(--ln);border-radius:13px;margin:2px 0 10px}
+.viewbar{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:4px;background:var(--ln);border-radius:13px;margin:2px 0 10px}
 .viewbar button{min-height:35px;border-radius:10px;font-size:13px;font-weight:700;color:var(--mu)}
 .viewbar button.active{background:var(--ac);color:#161616;box-shadow:0 1px 3px #0002}
 #strip{width:100%}
@@ -113,17 +113,6 @@ main{max-width:780px;margin:auto;padding:12px}
 .month-day.selected .dots i{background:#151515}
 .month-day .ncount{position:absolute;right:3px;top:2px;font-size:9px;color:var(--mu);font-style:normal}
 .month-day.selected .ncount{color:#151515}
-#strip.year-view{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-top:1px}
-.year-month{border:1px solid var(--ln);background:var(--card);border-radius:14px;padding:11px 9px 10px;text-align:left;min-width:0;height:auto}
-.year-month:active{opacity:.8}
-.year-month .ym-title{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:13px;margin-bottom:9px;text-transform:capitalize}
-.year-month .ym-count{color:#986f06;background:#fff6d4;padding:3px 6px;border-radius:7px;font-size:10px}
-:root[data-theme=dark] .year-month .ym-count{background:#493810;color:#ffd961}
-.mini-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
-.mini-grid span{font-size:9px;text-align:center;color:var(--mu);height:16px;line-height:16px;border-radius:4px;font-weight:600}
-.mini-grid .md{color:var(--tx)}
-.mini-grid .md.has{background:var(--ac);color:#151515}
-.mini-grid .md.now{outline:1px solid #c19620}
 #viewHandle{display:flex;align-items:center;justify-content:center;width:100%;min-height:37px;gap:7px;border-radius:12px;color:var(--mu);font-size:12px;touch-action:pan-x;user-select:none}
 #viewHandle .chev{color:var(--tx);font-size:20px;line-height:0}
 #viewHandle:active{background:var(--ln)}
@@ -137,8 +126,8 @@ main{max-width:780px;margin:auto;padding:12px}
 .fab{background:var(--ac);color:#151515;font-weight:700;width:56px;height:56px;border-radius:18px;box-shadow:0 5px 18px #0003}
 .dt a,.dh button:not(.scope){color:var(--tx)}
 .pri{background:var(--ac);color:#151515}
-@media(min-width:660px){#strip.year-view{grid-template-columns:repeat(3,minmax(0,1fr))}.year-month{padding:12px}.month-day{height:62px}}
-@media(max-width:380px){.brandmark{display:none}#range{font-size:14px}.nav button{min-width:34px}.year-month{padding:7px 5px}.mini-grid span{font-size:8px}}
+@media(min-width:660px){.month-day{height:62px}}
+@media(max-width:380px){.brandmark{display:none}#range{font-size:14px}.nav button{min-width:34px}.mini-grid span{font-size:8px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 
 </style>
@@ -157,7 +146,6 @@ main{max-width:780px;margin:auto;padding:12px}
   <div class="viewbar" id="viewbar" role="group" aria-label="Visualização da agenda">
     <button type="button" data-view="week" aria-pressed="true">Semana</button>
     <button type="button" data-view="month" aria-pressed="false">Mês</button>
-    <button type="button" data-view="year" aria-pressed="false">Ano</button>
   </div>
   <div id="strip" class="strip week-view" aria-label="Calendário"></div>
   <button type="button" id="viewHandle" aria-label="Expandir calendário">
@@ -212,7 +200,7 @@ const $=s=>document.querySelector(s),KEY='agenda-nfc-public-v1',ST=['Pendente','
 const SC={Pendente:'#c47a12',Confirmado:'#2f6fb5','Concluído':'#2e7d4f'};
 const iso=d=>{const z=new Date(d.getTime()-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
 const prs=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
-const mon=d=>{const x=new Date(d);x.setDate(x.getDate()-(x.getDay()+6)%7);x.setHours(0,0,0,0);return x};
+const mon=d=>{const x=new Date(d);x.setDate(x.getDate()-x.getDay());x.setHours(0,0,0,0);return x};
 const fmt=(d,o)=>d.toLocaleDateString('pt-BR',o);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ld=(k,def)=>{try{return JSON.parse(localStorage.getItem(k))??def}catch(e){return def}};
@@ -227,7 +215,7 @@ function upCl(i){if(!i.cliente)return;const k=nk(i.cliente),c=clients[k]||{};cli
 if(!items)items=SEED;
 if(!clients){clients={};items.forEach(upCl)}
 save();
-const S={ws:iso(mon(new Date())),sel:iso(new Date()),q:'',f:'todos',edit:null,open:null,view:['week','month','year'].includes(P.view)?P.view:'week',scope:P.view==='month'||P.view==='year'?'period':'day'};
+const S={ws:iso(mon(new Date())),sel:iso(new Date()),q:'',f:'todos',edit:null,open:null,view:['week','month'].includes(P.view)?P.view:'week',scope:P.view==='month'?'period':'day'};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(items));localStorage.setItem(KEY+'-p',JSON.stringify(P));localStorage.setItem(KEY+'-c',JSON.stringify(clients))}catch(e){toast('Não foi possível salvar')}}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1800)}
 const key=i=>i.data+(i.hora||'99:99');
@@ -235,7 +223,7 @@ const late=i=>{if(i.status==='Concluído')return false;const d=prs(i.data);if(i.
 const h12=t=>{const[h,m]=t.split(':').map(Number);return((h+11)%12+1)+':'+String(m).padStart(2,'0')+(h<12?' AM':' PM')};
 
 function setView(next){
-  const choices=['week','month','year'];
+  const choices=['week','month'];
   if(!choices.includes(next))return;
   S.view=next;
   S.scope=next==='week'?'day':'period';
@@ -255,13 +243,6 @@ function goToDay(day){
   render();
 }
 
-function gotoMonth(monthIndex){
-  const year=prs(S.sel).getFullYear();
-  const d=new Date(year,monthIndex,1);
-  S.sel=iso(d);
-  S.ws=iso(mon(d));
-  setView('month');
-}
 
 function moveBy(n){
   const d=prs(S.sel);
@@ -269,8 +250,7 @@ function moveBy(n){
   else {
     const day=d.getDate();
     d.setDate(1);
-    if(S.view==='month')d.setMonth(d.getMonth()+n);
-    else d.setFullYear(d.getFullYear()+n);
+    d.setMonth(d.getMonth()+n);
     const finalDay=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
     d.setDate(Math.min(day,finalDay));
   }
@@ -283,22 +263,22 @@ function render(){
  const we=new Date(ws);we.setDate(we.getDate()+6);
  const mode=S.view;
  const yr=selected.getFullYear(),mn=selected.getMonth();
- const monthKey=S.sel.slice(0,7),yearKey=S.sel.slice(0,4);
+ const monthKey=S.sel.slice(0,7);
  const monthLabel=fmt(selected,{month:'long',year:'numeric'});
  $('#range').textContent=mode==='week'
    ?fmt(ws,{day:'numeric',month:'short'})+' – '+fmt(we,{day:'numeric',month:'short'})
-   :mode==='month'?monthLabel[0].toUpperCase()+monthLabel.slice(1):String(yr);
- $('#bPrev').setAttribute('aria-label',mode==='week'?'Semana anterior':mode==='month'?'Mês anterior':'Ano anterior');
- $('#bNext').setAttribute('aria-label',mode==='week'?'Próxima semana':mode==='month'?'Próximo mês':'Próximo ano');
+   :monthLabel[0].toUpperCase()+monthLabel.slice(1);
+ $('#bPrev').setAttribute('aria-label',mode==='week'?'Semana anterior':'Mês anterior');
+ $('#bNext').setAttribute('aria-label',mode==='week'?'Próxima semana':'Próximo mês');
  document.querySelectorAll('#viewbar button').forEach(b=>{
    const active=b.dataset.view===mode;
    b.classList.toggle('active',active);
    b.setAttribute('aria-pressed',String(active));
  });
- const hint=mode==='week'?'Expandir para o mês':mode==='month'?'Expandir para o ano':'Recolher para o mês';
+ const hint=mode==='week'?'Expandir para o mês':'Recolher para a semana';
  $('#viewHint').textContent=hint;
  $('#viewHandle').setAttribute('aria-label',hint+'; deslize para cima ou para baixo');
- $('#viewHandle .chev').textContent=mode==='year'?'⌄':'⌃';
+ $('#viewHandle .chev').textContent=mode==='week'?'⌃':'⌄';
  const counts=new Map();
  for(const item of items)counts.set(item.data,(counts.get(item.data)||0)+1);
  let markup='';
@@ -309,9 +289,9 @@ function render(){
      markup+=`<button type="button" aria-label="${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${c?' · '+c+' serviços':''}" data-d="${k}" class="${k===today?'hoje ':''}${k===S.sel?'sel':''}"><span>${fmt(d,{weekday:'short'}).replace('.','')}</span><b>${d.getDate()}</b>${c?'<i></i>':'<i class="z"></i>'}</button>`;
    }
  } else if(mode==='month'){
-   const days=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+   const days=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
    markup=days.map(d=>`<span class="month-wd">${d}</span>`).join('');
-   const offset=(new Date(yr,mn,1).getDay()+6)%7;
+   const offset=new Date(yr,mn,1).getDay();
    const total=new Date(yr,mn+1,0).getDate();
    const cells=Math.ceil((offset+total)/7)*7;
    for(let p=0;p<cells;p++){
@@ -320,46 +300,29 @@ function render(){
      const other=d.getMonth()!==mn;
      markup+=`<button type="button" data-d="${k}" aria-label="${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${c?', '+c+' serviço'+(c>1?'s':''):''}" class="month-day${other?' other':''}${k===today?' today':''}${k===S.sel?' selected':''}"><span>${d.getDate()}</span><span class="dots">${c?'<i></i>':''}${c>1?'<i></i>':''}${c>2?'<i></i>':''}</span>${c>3?`<em class="ncount">${c}</em>`:''}</button>`;
    }
- } else {
-   const weekdays=['S','T','Q','Q','S','S','D'];
-   for(let m=0;m<12;m++){
-     const d=new Date(yr,m,1);
-     const keymonth=iso(d).slice(0,7);
-     const count=items.filter(i=>i.data.startsWith(keymonth)).length;
-     const first=(d.getDay()+6)%7,days=new Date(yr,m+1,0).getDate();
-     let cells=weekdays.map(x=>`<span>${x}</span>`).join('');
-     for(let p=0;p<first;p++)cells+='<span></span>';
-     for(let day=1;day<=days;day++){
-       const k=iso(new Date(yr,m,day));
-       cells+=`<span class="md${counts.has(k)?' has':''}${k===today?' now':''}">${day}</span>`;
-     }
-     const name=fmt(d,{month:'long'});
-     markup+=`<button type="button" data-month="${m}" class="year-month" aria-label="${name} de ${yr}, ${count} serviço${count===1?'':'s'}. Abrir mês"><span class="ym-title"><span>${name}</span>${count?`<span class="ym-count">${count} ${count===1?'serviço':'serviços'}</span>`:''}</span><span class="mini-grid">${cells}</span></button>`;
-   }
  }
  const calendar=$('#strip');calendar.className='strip '+mode+'-view';calendar.innerHTML=markup;
  const q=S.q.trim().toLowerCase();
  let L=items.filter(i=>{
    if(q)return(i.cliente+' '+i.endereco+' '+i.servico+' '+i.tel).toLowerCase().includes(q);
    if(S.scope==='period'&&mode==='month')return i.data.startsWith(monthKey);
-   if(S.scope==='period'&&mode==='year')return i.data.startsWith(yearKey);
    return i.data===S.sel;
  });
  if(S.f!=='todos')L=L.filter(i=>i.status===S.f);
  L.sort((a,b)=>(iKey(a)).localeCompare(iKey(b)));
  const isPeriod=!q&&S.scope==='period'&&mode!=='week';
- const periodTitle=mode==='month'?'Serviços do mês':'Serviços do ano';
+ const periodTitle='Serviços do mês';
  const dayTitle=fmt(prs(S.sel),{weekday:'long',day:'numeric',month:'long'});
  const label=q?'Resultados':isPeriod?periodTitle:dayTitle;
  const scopeButton=!q&&mode!=='week'
-    ?`<button type="button" class="scope" data-a="scope">${isPeriod?'Ver dia':'Ver '+(mode==='year'?'ano':'mês')+' completo'}</button>`:'';
+    ?`<button type="button" class="scope" data-a="scope">${isPeriod?'Ver dia':'Ver mês completo'}</button>`:'';
  $('#dh').innerHTML=`<h2>${label}</h2><span>${L.length} ${L.length===1?'serviço':'serviços'}</span>${scopeButton}<button type="button" data-a="cd">Copiar</button>`;
  const old=items.length&&Date.now()-P.bk>7*864e5;
  $('#bkp').innerHTML=old?`<div class="bk"><span>Sem backup há mais de 7 dias.</span><button data-a="bk">Fazer backup</button></div>`:'';
  let rows='',lastDate='';
  for(const i of L){
    if((isPeriod||q)&&i.data!==lastDate){
-     rows+=`<div class="date-group">${fmt(prs(i.data),{weekday:'long',day:'numeric',month:'long',year:mode==='year'?'numeric':undefined})}</div>`;
+     rows+=`<div class="date-group">${fmt(prs(i.data),{weekday:'long',day:'numeric',month:'long'})}</div>`;
      lastDate=i.data;
    }
    const o=S.open===i.id;
@@ -379,7 +342,7 @@ const dTitle=k=>{const t=fmt(prs(k),{weekday:'long',day:'2-digit',month:'2-digit
 function dayText(k){const L=items.filter(i=>i.data===k).sort((a,b)=>key(a).localeCompare(key(b)));return dTitle(k)+'\n\n'+(L.length?L.map(blk).join('\n\n'):'Sem serviços')}
 function weekText(){const ws=prs(S.ws),o=[];for(let n=0;n<7;n++){const d=new Date(ws);d.setDate(d.getDate()+n);const k=iso(d);if(items.some(i=>i.data===k))o.push(dayText(k))}return o.join('\n\n———\n\n')||'Sem serviços na semana'}
 function periodText(){
- const scope=S.view==='month'?S.sel.slice(0,7):S.sel.slice(0,4);
+ const scope=S.sel.slice(0,7);
  const events=items.filter(i=>i.data.startsWith(scope)).sort((a,b)=>iKey(a).localeCompare(iKey(b)));
  return events.length?events.map(i=>dTitle(i.data)+'\n'+blk(i)).join('\n\n———\n\n'):'Sem serviços no período';
 }
@@ -415,7 +378,6 @@ $('#dh').onclick=e=>{
 $('#strip').onclick=e=>{
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.d)goToDay(b.dataset.d);
-  else if(b.dataset.month!==undefined)gotoMonth(Number(b.dataset.month));
 };
 $('#viewbar').onclick=e=>{
   const b=e.target.closest('button[data-view]');
@@ -424,8 +386,7 @@ $('#viewbar').onclick=e=>{
 let ignoreHandleClickUntil=0;
 $('#viewHandle').onclick=()=>{
   if(Date.now()<ignoreHandleClickUntil)return;
-  const values=['week','month','year'],i=values.indexOf(S.view);
-  setView(values[i===2?1:i+1]);
+  setView(S.view==='week'?'month':'week');
 };
 let gestureStart=null;
 $('#viewHandle').addEventListener('touchstart',e=>{
@@ -436,9 +397,8 @@ $('#viewHandle').addEventListener('touchend',e=>{
   const dy=e.changedTouches[0].clientY-gestureStart.y;
   const dx=e.changedTouches[0].clientX-gestureStart.x;gestureStart=null;
   if(Math.abs(dy)<25||Math.abs(dy)<Math.abs(dx))return;
-  const choices=['week','month','year'],idx=choices.indexOf(S.view);
-  const next=dy<0?Math.min(idx+1,2):Math.max(idx-1,0);
-  if(next!==idx){ignoreHandleClickUntil=Date.now()+600;setView(choices[next]);}
+  const next=dy<0?'month':'week';
+  if(next!==S.view){ignoreHandleClickUntil=Date.now()+600;setView(next);}
 },{passive:true});
 $('#bPrev').onclick=()=>moveBy(-1);
 $('#bNext').onclick=()=>moveBy(1);
