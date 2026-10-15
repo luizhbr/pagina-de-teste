@@ -154,8 +154,6 @@ main{max-width:780px;margin:auto;padding:12px}
 .status-explainer{margin:0;color:var(--mu);font-size:12px}
 #sdl{max-width:420px}
 
-.client-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--ln);padding:7px 10px;border-radius:12px;color:var(--mu);font-size:12px;margin-bottom:9px}
-.client-meta button,.suggestions .import-hint{font-size:12px;font-weight:750;min-height:32px;padding:4px 10px;background:var(--ac);color:var(--on);border:0;border-radius:9px;white-space:nowrap}
 .hintempty{padding:11px 12px;font-size:12px;color:var(--mu);display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .suggestions button:focus-visible{outline:2px solid var(--ac);outline-offset:-2px}
 </style>
@@ -200,7 +198,6 @@ main{max-width:780px;margin:auto;padding:12px}
 
 <dialog id="dlg"><form method="dialog" id="fm" style="margin:0">
   <h3 id="dt">Novo serviço</h3>
-  <div class="client-meta" id="clientMeta" role="status"></div>
   <label>Cliente<input name="cliente" required autocomplete="off" placeholder="Comece a digitar o nome"></label>
   <div class="suggestions" id="clientHints" aria-label="Clientes sugeridos" hidden></div>
   <div class="g2"><label>Data<input name="data" type="date" required></label><label>Horário<input name="hora" type="time"></label></div>
@@ -491,11 +488,6 @@ function clientEntries(){
  }
  return [...records.values()].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
 }
-function updateClientMeta(){
- const count=clientEntries().length;
- $('#clientMeta').innerHTML='<span>'+count+' cliente'+(count===1?'':'s')+' neste dispositivo'+(count===0?' · Importe seu CSV':'')+'</span><button type="button" id="quickImportClients">Importar CSV</button>';
-}
-function fillList(){updateClientMeta()}
 function hideHints(){
  $('#clientHints').hidden=true;$('#addressHints').hidden=true;
 }
@@ -537,7 +529,7 @@ function presentHints(type){
  panel._matches=matches;
  if(!matches.length){
    const message=isClient?'Nenhum cliente encontrado.':'Nenhum endereço encontrado.';
-   panel.innerHTML='<div class="hintempty">'+message+(isClient?'<button type="button" class="import-hint" data-import-clients="true">Importar clientes CSV</button>':'')+'</div>';
+   panel.innerHTML='<div class="hintempty">'+message+'</div>';
    panel.hidden=false;
    return;
  }
@@ -585,17 +577,13 @@ for(const [type,id] of [['cliente','#clientHints'],['endereco','#addressHints']]
  $(id).addEventListener('click',e=>{
    const button=e.target.closest('button');
    if(!button)return;
-   if(button.dataset.importClients==='true')return $('#clientfile').click();
    if(button.dataset.idx!==undefined)selectHint(type,Number(button.dataset.idx));
  });
 }
-$('#clientMeta').addEventListener('click',e=>{
- if(e.target.closest('#quickImportClients'))$('#clientfile').click();
-});
 document.addEventListener('pointerdown',e=>{
  if(!e.target.closest('#clientHints')&&!e.target.closest('#addressHints')&&!e.target.closest('input[name="cliente"]')&&!e.target.closest('input[name="endereco"]'))hideHints();
 });
-function openForm(i,novo){fillList();hideHints();S.edit=i&&!novo?i.id:null;$('#dt').textContent=S.edit?'Editar serviço':'Novo serviço';$('#bDel').style.display=S.edit?'':'none';
+function openForm(i,novo){hideHints();S.edit=i&&!novo?i.id:null;$('#dt').textContent=S.edit?'Editar serviço':'Novo serviço';$('#bDel').style.display=S.edit?'':'none';
   const v=i||{data:S.sel,status:'Aguardando confirmação'};for(const e of fm.elements)if(e.name)e.value=v[e.name]??'';dlg.showModal()}
 fm.addEventListener('submit',()=>{const o={};for(const x of fm.elements)if(x.name)o[x.name]=x.value.trim();
   if(S.edit){Object.assign(items.find(i=>i.id===S.edit),o)}else items.push({id:uid(),...o});
@@ -740,7 +728,7 @@ $('#clientfile').onchange=async e=>{
      if(existing)updated++;else added++;
      draft[key]={nome:c.nome,endereco:c.endereco||prev.endereco||'',tel:c.tel||prev.tel||''};
    }
-   clients=draft;save();fillList();hideHints();mdl.close();
+   clients=draft;save();hideHints();mdl.close();
    toast((added+updated)+' clientes disponíveis');
  }catch(err){toast(err?.message||'CSV inválido')}
  finally{e.target.value=''}
@@ -748,7 +736,7 @@ $('#clientfile').onchange=async e=>{
 
 $('#mImp').onclick=()=>$('#file').click();
 $('#file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text()),a=Array.isArray(j)?j:j.items;if(!Array.isArray(a))throw 0;
-  if(confirm(`Importar ${a.length} serviços? Isso substitui tudo que está no app.`)){items=a.map(x=>({...x,id:uid()}));clients=(!Array.isArray(j)&&j.clients)||{};items.forEach(upCl);migrateStatuses();save();fillList();mdl.close();render();toast('Importado')}}catch(x){toast('Arquivo inválido')}e.target.value=''};
+  if(confirm(`Importar ${a.length} serviços? Isso substitui tudo que está no app.`)){items=a.map(x=>({...x,id:uid()}));clients=(!Array.isArray(j)&&j.clients)||{};items.forEach(upCl);migrateStatuses();save();mdl.close();render();toast('Importado')}}catch(x){toast('Arquivo inválido')}e.target.value=''};
 $('#mTxt').onclick=()=>{mdl.close();$('#tdl').showModal()};$('#tCancel').onclick=()=>$('#tdl').close();
 $('#tOk').onclick=()=>{let n=0;$('#tx').value.split('\n').forEach(l=>{const p=l.split(/\s+[-–—]\s+/).map(s=>s.trim()).filter(Boolean);if(!p.length)return;
   const ti=p.findIndex((s,k)=>k>0&&/^\d{1,2}:\d{2}$/.test(s)),hora=ti>0?p.splice(ti,1)[0].padStart(5,'0'):'';
