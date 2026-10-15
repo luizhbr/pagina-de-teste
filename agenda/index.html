@@ -47,7 +47,7 @@ main{padding:10px 12px}
 .box{background:var(--card);border-radius:14px;border:1px solid var(--ln);overflow:hidden}
 .row{border-top:1px solid var(--ln)}.row:first-child{border-top:0}
 .rh{display:flex;align-items:center;gap:12px;padding:10px 12px;cursor:pointer}
-.hr{width:46px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--tx)}
+.hr{width:76px;flex:0 0 76px;white-space:nowrap;font-size:12px;font-weight:650;font-variant-numeric:tabular-nums;color:var(--tx)}
 .hr.late{color:var(--rd)}
 .mid{flex:1;min-width:0}
 .mid b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -505,7 +505,7 @@ function render(){
    }
    const o=S.open===i.id;
    rows+=`<div class="row" data-id="${esc(i.id)}">
-     <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora||'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><button type="button" class="pill" data-a="st" style="${badgeStyle(i.status)}">${esc(i.status)}</button></div>
+     <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora?h12(i.hora):'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><button type="button" class="pill" data-a="st" style="${badgeStyle(i.status)}">${esc(i.status)}</button></div>
      ${o?`<div class="dt">${i.endereco?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco)}">${esc(i.endereco)}</a>`:''}${i.servico?`<p>${esc(i.servico)}</p>`:''}${i.valor?`<p><b>${esc(i.valor)}</b></p>`:''}${i.obs?`<p class="mu">${esc(i.obs)}</p>`:''}
        <div class="ac"><button type="button" class="wa" data-a="sms">SMS</button><button type="button" data-a="rp">Repetir</button><button type="button" data-a="ed">Editar</button><button type="button" class="quick-delete" data-a="del" aria-label="Excluir serviço de ${esc(i.cliente||'cliente')}" title="Excluir serviço"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14M10 10v7M14 10v7"/></svg></button></div></div>`:''}
    </div>`;
@@ -523,7 +523,7 @@ const APPOINTMENT_DIVIDER='\n\n────────────────�
 function blk(i){
  const date=fmt(prs(i.data),{day:'2-digit',month:'2-digit',year:'numeric'});
  return [
-   '📅 '+date+(i.hora?' - '+i.hora:''),
+   '📅 '+date+(i.hora?' - '+h12(i.hora):''),
    '*'+String(i.cliente||'').trim()+'*',
    i.tel||'',
    i.endereco?'📍 '+i.endereco:'',
@@ -552,7 +552,7 @@ function periodText(){
 async function copy(t,ok){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast(ok)}
 
 function msg(i){const d=prs(i.data);
-  if(P.lang==='pt')return`Olá ${i.cliente}, aqui é o Luiz da Next Finish Carpentry. Confirmando nosso serviço ${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${i.hora?' às '+i.hora:''}${i.endereco?' em '+i.endereco:''}. Tudo certo?`;
+  if(P.lang==='pt')return`Olá ${i.cliente}, aqui é o Luiz da Next Finish Carpentry. Confirmando nosso serviço ${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${i.hora?' às '+h12(i.hora):''}${i.endereco?' em '+i.endereco:''}. Tudo certo?`;
   return`Hi ${i.cliente}, this is Luiz from Next Finish Carpentry. Confirming our appointment on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${i.hora?' at '+h12(i.hora):''}${i.endereco?' at '+i.endereco:''}. Does that still work for you?`}
 function sms(i){
  let number=String(i.tel||'').replace(/\D/g,'');
@@ -814,7 +814,7 @@ function openQuickDelete(i){
  if(!i||!items.some(x=>x.id===i.id))return;
  S.deleteId=i.id;
  const when=fmt(prs(i.data),{day:'2-digit',month:'2-digit',year:'numeric'});
- $('#deleteSummary').textContent=(i.cliente||'Cliente')+' · '+when+(i.hora?' às '+i.hora:'');
+ $('#deleteSummary').textContent=(i.cliente||'Cliente')+' · '+when+(i.hora?' às '+h12(i.hora):'');
  $('#quickDeleteDlg').showModal();
 }
 function closeQuickDelete(){
@@ -924,7 +924,7 @@ function monthReportHTML(month){
  const groups=[...days].map(([date,events])=>
   '<section class="day"><h2>'+esc(fmt(prs(date),{weekday:'long',day:'2-digit',month:'long',year:'numeric'}))+
   ' <small>('+events.length+' '+(events.length===1?'serviço':'serviços')+')</small></h2>'+
-  events.map(i=>'<article class="entry"><div class="entry-title"><b>'+esc(i.hora||'Horário não informado')+' · '+esc(i.cliente||'Cliente não informado')+'</b><span class="status" style="border-color:'+SC[i.status]+'">'+esc(i.status||'Aguardando confirmação')+'</span></div>'+
+  events.map(i=>'<article class="entry"><div class="entry-title"><b>'+esc(i.hora?h12(i.hora):'Horário não informado')+' · '+esc(i.cliente||'Cliente não informado')+'</b><span class="status" style="border-color:'+SC[i.status]+'">'+esc(i.status||'Aguardando confirmação')+'</span></div>'+
     (i.tel?'<p><strong>Telefone:</strong> '+esc(i.tel)+'</p>':'')+
     (i.endereco?'<p><strong>Endereço:</strong> '+esc(i.endereco)+'</p>':'')+
     (i.servico?'<p><strong>Serviço:</strong> '+esc(i.servico)+'</p>':'')+
