@@ -178,6 +178,43 @@ body.month-mode main{position:relative;z-index:0}
 .report-actions button.pri{background:var(--ac);border-color:var(--ac);color:var(--on)}
 .report-hint{font-size:12px;color:var(--mu);line-height:1.45;margin:12px 0}
 .report-close{width:100%;border:1px solid var(--ln);background:var(--card);font-weight:700;margin-top:3px}
+
+/* Time entry: high-contrast date icon and a 24-hour touch-scrolling picker */
+:root{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark}}
+.date-field input[type=date]{min-width:0;cursor:pointer}
+.date-field input[type=date]::-webkit-calendar-picker-indicator{width:19px;height:19px;opacity:1;cursor:pointer;filter:brightness(.45)}
+:root[data-theme=dark] .date-field input[type=date]::-webkit-calendar-picker-indicator{filter:brightness(0) invert(.85)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .date-field input[type=date]::-webkit-calendar-picker-indicator{filter:brightness(0) invert(.85)}}
+.date-field input[type=date]:focus::-webkit-calendar-picker-indicator{filter:invert(78%) sepia(79%) saturate(595%) hue-rotate(347deg) brightness(101%) contrast(94%)!important}
+.time-field{min-width:0;display:flex;flex-direction:column;font-size:12px;color:var(--mu);margin-top:8px}
+.time-field>span{display:block;margin-bottom:2px}
+#timePickerTrigger{margin:0;display:flex;width:100%;height:42px;min-height:42px;align-items:center;justify-content:space-between;gap:5px;padding:8px 10px;text-align:left;background:var(--card);border:1px solid var(--ln);border-radius:10px;color:var(--tx);font-size:15px;font-weight:400}
+#timePickerTrigger #timePickerValue{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#timePickerTrigger.is-empty #timePickerValue{color:var(--mu)}
+#timePickerTrigger svg{flex:none;fill:none;stroke:var(--mu);stroke-width:1.9;stroke-linejoin:round;stroke-linecap:round}
+#timePickerTrigger:focus-visible,#timePickerTrigger[aria-expanded=true]{border-color:var(--ac);outline:2px solid var(--ac);outline-offset:0}
+#timePickerTrigger:focus-visible svg,#timePickerTrigger[aria-expanded=true] svg{stroke:var(--ac)}
+#timePickerDlg{width:min(380px,92vw);max-height:92vh;padding:18px;overflow:hidden}
+.time-picker-description{margin:0 0 12px;font-size:13px;line-height:1.4;color:var(--mu)}
+.time-picker-wheels{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:6px 0 12px}
+.time-wheel-col{flex:1;min-width:0}
+.time-wheel-col>strong{display:block;margin:0 0 5px;text-align:center;font-size:13px}
+.time-wheel-wrap{height:220px;position:relative;border:1px solid var(--ln);border-radius:12px;overflow:hidden;background:var(--card)}
+.time-wheel-wrap::before{content:"";position:absolute;top:88px;height:44px;left:5px;right:5px;border:1px solid var(--ac);border-radius:9px;background:color-mix(in srgb,var(--ac) 13%,transparent);pointer-events:none;z-index:1}
+.time-wheel{height:220px;overflow-y:auto;overscroll-behavior:contain;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:88px 0;touch-action:pan-y}
+.time-wheel::-webkit-scrollbar{display:none}
+.time-wheel .wheel-option{display:block;width:100%;height:44px;min-height:44px;line-height:44px;border:0;border-radius:0;text-align:center;font-size:20px;font-variant-numeric:tabular-nums;font-weight:500;padding:0;background:transparent;scroll-snap-align:center;position:relative;z-index:2}
+.time-wheel .wheel-option[aria-selected=true]{font-weight:800;color:var(--tx)}
+.time-wheel .wheel-option[aria-selected=false]{color:var(--mu)}
+.time-wheel:focus-visible{outline:2px solid var(--ac);outline-offset:-3px;border-radius:10px}
+.time-colon{font-size:22px;font-weight:800;align-self:center;margin-top:28px}
+.time-picker-footer{display:flex;flex-direction:column;gap:12px}
+.time-clear{align-self:flex-start;min-height:32px;padding:0 3px;color:var(--mu);font-size:13px;text-decoration:underline}
+.time-picker-actions{display:flex;gap:8px}
+.time-picker-actions button{flex:1;min-height:46px;border:1px solid var(--ln);font-size:14px;font-weight:750}
+@media(max-width:360px){.time-picker-wheels{gap:5px}.time-wheel .wheel-option{font-size:18px}}
 </style>
 </head>
 <body>
@@ -215,7 +252,7 @@ body.month-mode main{position:relative;z-index:0}
   <h3 id="dt">Novo serviço</h3>
   <label>Cliente<input name="cliente" required autocomplete="off" placeholder="Comece a digitar o nome"></label>
   <div class="suggestions" id="clientHints" aria-label="Clientes sugeridos" hidden></div>
-  <div class="g2"><label>Data<input name="data" type="date" required></label><label>Horário<input name="hora" type="time"></label></div>
+  <div class="g2"><label class="date-field">Data<input name="data" type="date" required></label><div class="time-field"><span id="timeFieldLabel">Horário</span><input type="hidden" name="hora" id="timeValue"><button type="button" id="timePickerTrigger" aria-haspopup="dialog" aria-controls="timePickerDlg" aria-expanded="false" aria-labelledby="timeFieldLabel timePickerValue"><span id="timePickerValue">Selecionar horário</span><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path></svg></button></div></div>
   <label>Endereço<input name="endereco" autocomplete="off" placeholder="Comece a digitar a rua"></label>
   <div class="suggestions" id="addressHints" aria-label="Endereços sugeridos" hidden></div>
   <label>Serviço<textarea name="servico" rows="2"></textarea></label>
@@ -224,6 +261,19 @@ body.month-mode main{position:relative;z-index:0}
   <label>Observações<textarea name="obs" rows="2"></textarea></label>
   <div class="fr"><button type="button" id="bCancel">Cancelar</button><button type="button" class="del" id="bDel">Excluir</button><button type="submit" class="pri">Salvar</button></div>
 </form></dialog>
+<dialog id="timePickerDlg" aria-labelledby="timePickerTitle">
+  <h3 id="timePickerTitle">Escolher horário</h3>
+  <p class="time-picker-description">Deslize para escolher a hora e os minutos.</p>
+  <div class="time-picker-wheels">
+    <div class="time-wheel-col"><strong id="hourWheelLabel">Hora</strong><div class="time-wheel-wrap"><div class="time-wheel" id="timeHours" tabindex="0" role="listbox" aria-labelledby="hourWheelLabel"></div></div></div>
+    <span class="time-colon" aria-hidden="true">:</span>
+    <div class="time-wheel-col"><strong id="minuteWheelLabel">Minutos</strong><div class="time-wheel-wrap"><div class="time-wheel" id="timeMinutes" tabindex="0" role="listbox" aria-labelledby="minuteWheelLabel"></div></div></div>
+  </div>
+  <div class="time-picker-footer">
+    <button type="button" id="timeClear" class="time-clear">Sem horário</button>
+    <div class="time-picker-actions"><button type="button" id="timeCancel">Cancelar</button><button type="button" id="timeConfirm" class="pri">Confirmar</button></div>
+  </div>
+</dialog>
 <dialog id="quickDeleteDlg">
   <h3>Excluir compromisso?</h3>
   <p class="delete-summary" id="deleteSummary"></p>
@@ -627,8 +677,98 @@ for(const [type,id] of [['cliente','#clientHints'],['endereco','#addressHints']]
 document.addEventListener('pointerdown',e=>{
  if(!e.target.closest('#clientHints')&&!e.target.closest('#addressHints')&&!e.target.closest('input[name="cliente"]')&&!e.target.closest('input[name="endereco"]'))hideHints();
 });
+
+/* Native date stays intact; only the time picker is custom. Keep hora in HH:mm. */
+const TWO_DIGITS=n=>String(n).padStart(2,'0');
+const TIME_RE=/^([01]\d|2[0-3]):[0-5]\d$/;
+const TIME_SLOT_HEIGHT=44;
+let timeDraft={hour:9,minute:0};
+function updateTimeDisplay(){
+ const raw=$('#timeValue').value;
+ const valid=TIME_RE.test(raw);
+ $('#timePickerValue').textContent=valid?raw:'Selecionar horário';
+ $('#timePickerTrigger').classList.toggle('is-empty',!valid);
+}
+function renderTimeWheel(id,limit){
+ const el=$(id);
+ el.innerHTML=Array.from({length:limit},(_,n)=>'<button type="button" class="wheel-option" data-value="'+n+'" role="option" aria-selected="false">'+TWO_DIGITS(n)+'</button>').join('');
+}
+function markTimeWheel(id,val){
+ for(const b of $(id).querySelectorAll('.wheel-option')){
+   b.setAttribute('aria-selected',String(Number(b.dataset.value)===val));
+ }
+}
+function setTimeWheel(kind,number){
+ const hours=kind==='hour',selector=hours?'#timeHours':'#timeMinutes';
+ const limit=hours?24:60;
+ const val=Math.max(0,Math.min(limit-1,Math.round(Number(number)||0)));
+ if(hours)timeDraft.hour=val;
+ else timeDraft.minute=val;
+ markTimeWheel(selector,val);
+ $(selector).scrollTop=val*TIME_SLOT_HEIGHT;
+}
+function refreshTimeFromScroll(kind){
+ const hours=kind==='hour',selector=hours?'#timeHours':'#timeMinutes';
+ const limit=hours?24:60;
+ const val=Math.max(0,Math.min(limit-1,Math.round($(selector).scrollTop/TIME_SLOT_HEIGHT)));
+ if(hours)timeDraft.hour=val;
+ else timeDraft.minute=val;
+ markTimeWheel(selector,val);
+}
+function openTimePicker(){
+ const raw=$('#timeValue').value;
+ const [hour,minute]=TIME_RE.test(raw)?raw.split(':').map(Number):[9,0];
+ renderTimeWheel('#timeHours',24);
+ renderTimeWheel('#timeMinutes',60);
+ $('#timePickerTrigger').setAttribute('aria-expanded','true');
+ $('#timePickerDlg').showModal();
+ setTimeWheel('hour',hour);
+ setTimeWheel('minute',minute);
+ $('#timeHours').focus({preventScroll:true});
+}
+$('#timePickerTrigger').onclick=openTimePicker;
+for(const [selector,kind] of [['#timeHours','hour'],['#timeMinutes','minute']]){
+ const wheel=$(selector);
+ wheel.addEventListener('scroll',()=>refreshTimeFromScroll(kind),{passive:true});
+ wheel.addEventListener('click',e=>{
+   const choice=e.target.closest('.wheel-option');
+   if(choice)setTimeWheel(kind,Number(choice.dataset.value));
+ });
+ wheel.addEventListener('keydown',e=>{
+   const current=kind==='hour'?timeDraft.hour:timeDraft.minute,limit=kind==='hour'?24:60;
+   let next;
+   if(e.key==='ArrowDown')next=Math.min(limit-1,current+1);
+   else if(e.key==='ArrowUp')next=Math.max(0,current-1);
+   else if(e.key==='Home')next=0;
+   else if(e.key==='End')next=limit-1;
+   else if(e.key==='PageDown')next=Math.min(limit-1,current+5);
+   else if(e.key==='PageUp')next=Math.max(0,current-5);
+   else return;
+   e.preventDefault();
+   setTimeWheel(kind,next);
+ });
+}
+function closeTimePicker(){
+ $('#timePickerDlg').close();
+ $('#timePickerTrigger').focus({preventScroll:true});
+}
+$('#timePickerDlg').addEventListener('close',()=>$('#timePickerTrigger').setAttribute('aria-expanded','false'));
+$('#timeCancel').onclick=closeTimePicker;
+$('#timeClear').onclick=()=>{
+ $('#timeValue').value='';
+ updateTimeDisplay();
+ closeTimePicker();
+};
+$('#timeConfirm').onclick=()=>{
+ refreshTimeFromScroll('hour');
+ refreshTimeFromScroll('minute');
+ $('#timeValue').value=TWO_DIGITS(timeDraft.hour)+':'+TWO_DIGITS(timeDraft.minute);
+ updateTimeDisplay();
+ closeTimePicker();
+};
+
 function openForm(i,novo){hideHints();S.edit=i&&!novo?i.id:null;$('#dt').textContent=S.edit?'Editar serviço':'Novo serviço';$('#bDel').style.display=S.edit?'':'none';
-  const v=i||{data:S.sel,status:'Aguardando confirmação'};for(const e of fm.elements)if(e.name)e.value=v[e.name]??'';dlg.showModal()}
+  const v=i||{data:S.sel,status:'Aguardando confirmação'};for(const e of fm.elements)if(e.name)e.value=v[e.name]??'';updateTimeDisplay();dlg.showModal()}
 fm.addEventListener('submit',()=>{const o={};for(const x of fm.elements)if(x.name)o[x.name]=x.value.trim();
   if(S.edit){Object.assign(items.find(i=>i.id===S.edit),o)}else items.push({id:uid(),...o});
   upCl(o);save();S.sel=o.data;S.ws=iso(mon(prs(o.data)));render();toast('Salvo')});
