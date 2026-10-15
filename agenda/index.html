@@ -130,6 +130,15 @@ main{max-width:780px;margin:auto;padding:12px}
 @media(max-width:380px){.brandmark{display:none}#range{font-size:14px}.nav button{min-width:34px}.mini-grid span{font-size:8px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 
+
+/* Local-only customer and address suggestions */
+.suggestions{margin:4px 0 8px;border:1px solid var(--ln);border-radius:12px;background:var(--card);max-height:180px;overflow-y:auto;box-shadow:0 8px 22px #0001}
+.suggestions[hidden]{display:none!important}
+.suggestions button{width:100%;height:auto;min-height:45px;padding:9px 12px;text-align:left;border-radius:0;border-bottom:1px solid var(--ln);display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.suggestions button:last-child{border-bottom:0}
+.suggestions button:active{background:var(--ln)}
+.suggestions b{font-size:13px;white-space:normal;overflow-wrap:anywhere}
+.suggestions small{font-size:11px;color:var(--mu);white-space:normal;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -165,9 +174,11 @@ main{max-width:780px;margin:auto;padding:12px}
 
 <dialog id="dlg"><form method="dialog" id="fm" style="margin:0">
   <h3 id="dt">Novo serviço</h3>
-  <label>Cliente<input name="cliente" required autocomplete="off" list="clist"></label><datalist id="clist"></datalist>
+  <label>Cliente<input name="cliente" required autocomplete="off" placeholder="Comece a digitar o nome"></label>
+  <div class="suggestions" id="clientHints" aria-label="Clientes sugeridos" hidden></div>
   <div class="g2"><label>Data<input name="data" type="date" required></label><label>Horário<input name="hora" type="time"></label></div>
-  <label>Endereço<input name="endereco" autocomplete="off"></label>
+  <label>Endereço<input name="endereco" autocomplete="off" placeholder="Comece a digitar a rua"></label>
+  <div class="suggestions" id="addressHints" aria-label="Endereços sugeridos" hidden></div>
   <label>Serviço<textarea name="servico" rows="2"></textarea></label>
   <div class="g2"><label>Telefone<input name="tel" type="tel" inputmode="tel"></label><label>Valor<input name="valor" placeholder="$150"></label></div>
   <label>Status<select name="status"><option>Pendente</option><option>Confirmado</option><option>Concluído</option></select></label>
@@ -183,9 +194,11 @@ main{max-width:780px;margin:auto;padding:12px}
   <button id="mLang"></button>
   <button id="mExp">Exportar backup (JSON)</button>
   <button id="mImp">Importar backup (JSON)</button>
+  <button id="mCli">Importar clientes (CSV)</button>
   <button id="mTxt">Importar de texto colado</button>
   <button id="mClose" style="text-align:center;font-weight:600">Fechar</button>
   <input type="file" id="file" accept=".json,application/json" hidden>
+  <input type="file" id="clientfile" accept=".csv,text/csv,text/plain" hidden>
 </div></dialog>
 
 <dialog id="tdl"><h3>Importar de texto</h3>
@@ -354,15 +367,89 @@ function msg(i){const d=prs(i.data);
 function wa(i){let n=(i.tel||'').replace(/\D/g,'');if(n.length===10)n='1'+n;window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg(i))}`,'_blank')}
 
 const dlg=$('#dlg'),fm=$('#fm');
-function fillList(){$('#clist').innerHTML=Object.values(clients).sort((a,b)=>a.nome.localeCompare(b.nome)).map(c=>`<option value="${esc(c.nome)}">`).join('')}
-fm.elements.cliente.addEventListener('input',e=>{const c=clients[nk(e.target.value)];if(!c)return;
-  if(!fm.elements.tel.value)fm.elements.tel.value=c.tel;if(!fm.elements.endereco.value)fm.elements.endereco.value=c.endereco});
-function openForm(i,novo){fillList();S.edit=i&&!novo?i.id:null;$('#dt').textContent=S.edit?'Editar serviço':'Novo serviço';$('#bDel').style.display=S.edit?'':'none';
+const normalizeSearch=s=>String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').trim().toLocaleLowerCase('pt-BR');
+const normalizedKey=s=>normalizeSearch(s).replace(/\\s+/g,' ');
+function clientEntries(){
+  return Object.entries(clients).filter(([k,c])=>c&&c.nome).map(([key,c])=>({key,...c}));
+}
+function fillList(){ /* Native datalist replaced by touch-friendly matching suggestions. */ }
+function hideHints(){
+  $('#clientHints').hidden=true;$('#addressHints').hidden=true;
+}
+function addressEntries(){
+ const options=new Map();
+ for(const c of clientEntries()){
+   if(!c.endereco)continue;
+   const key=normalizedKey(c.endereco);
+   if(!options.has(key))options.set(key,{endereco:c.endereco,cliente:c.nome,tel:c.tel||''});
+ }
+ for(const i of items){
+   if(!i.endereco)continue;
+   const key=normalizedKey(i.endereco);
+   if(!options.has(key))options.set(key,{endereco:i.endereco,cliente:i.cliente||'',tel:i.tel||''});
+ }
+ return [...options.values()];
+}
+function presentHints(type){
+ const isClient=type==='cliente',field=fm.elements[type],panel=$(isClient?'#clientHints':'#addressHints');
+ const query=normalizeSearch(field.value);
+ if(!query){panel.hidden=true;panel.innerHTML='';return}
+ const matches=(isClient?clientEntries():addressEntries()).filter(x=>
+   normalizeSearch(isClient?x.nome:x.endereco).includes(query)
+ ).sort((a,b)=>{
+   const av=normalizeSearch(isClient?a.nome:a.endereco),bv=normalizeSearch(isClient?b.nome:b.endereco);
+   return Number(bv.startsWith(query))-Number(av.startsWith(query))||av.localeCompare(bv);
+ }).slice(0,8);
+ if(!matches.length){panel.hidden=true;panel.innerHTML='';return}
+ panel.innerHTML=matches.map((c,index)=>`<button type="button" data-idx="${index}"><b>${esc(isClient?c.nome:c.endereco)}</b><small>${esc(isClient?[c.endereco,c.tel].filter(Boolean).join(' · '):c.cliente)}</small></button>`).join('');
+ panel._matches=matches;panel.hidden=false;
+}
+function selectHint(type,index){
+ const panel=$(type==='cliente'?'#clientHints':'#addressHints');
+ const c=panel._matches&&panel._matches[index];
+ if(!c)return;
+ if(type==='cliente'){
+   fm.elements.cliente.value=c.nome||'';
+   fm.elements.tel.value=c.tel||'';
+   fm.elements.endereco.value=c.endereco||'';
+ }else{
+   fm.elements.endereco.value=c.endereco||'';
+   const entered=normalizedKey(fm.elements.cliente.value);
+   if(!entered||entered===normalizedKey(c.cliente)){
+     if(!entered)fm.elements.cliente.value=c.cliente||'';
+     if(!fm.elements.tel.value)fm.elements.tel.value=c.tel||'';
+   }
+ }
+ hideHints();
+}
+for(const type of ['cliente','endereco']){
+ fm.elements[type].addEventListener('input',()=>{
+   if(type==='cliente'){
+     const c=clients[nk(fm.elements.cliente.value)]||clientEntries().find(x=>normalizedKey(x.nome)===normalizedKey(fm.elements.cliente.value));
+     if(c){
+       if(!fm.elements.tel.value)fm.elements.tel.value=c.tel||'';
+       if(!fm.elements.endereco.value)fm.elements.endereco.value=c.endereco||'';
+     }
+   }
+   presentHints(type);
+ });
+ fm.elements[type].addEventListener('focus',()=>presentHints(type));
+}
+for(const [type,id] of [['cliente','#clientHints'],['endereco','#addressHints']]){
+ $(id).addEventListener('click',e=>{
+   const b=e.target.closest('button[data-idx]');
+   if(b)selectHint(type,Number(b.dataset.idx));
+ });
+}
+document.addEventListener('pointerdown',e=>{
+ if(!e.target.closest('#clientHints')&&!e.target.closest('#addressHints')&&!e.target.closest('input[name="cliente"]')&&!e.target.closest('input[name="endereco"]'))hideHints();
+});
+function openForm(i,novo){fillList();hideHints();S.edit=i&&!novo?i.id:null;$('#dt').textContent=S.edit?'Editar serviço':'Novo serviço';$('#bDel').style.display=S.edit?'':'none';
   const v=i||{data:S.sel,status:'Pendente'};for(const e of fm.elements)if(e.name)e.value=v[e.name]??'';dlg.showModal()}
 fm.addEventListener('submit',()=>{const o={};for(const x of fm.elements)if(x.name)o[x.name]=x.value.trim();
   if(S.edit){Object.assign(items.find(i=>i.id===S.edit),o)}else items.push({id:uid(),...o});
   upCl(o);save();S.sel=o.data;S.ws=iso(mon(prs(o.data)));render();toast('Salvo')});
-$('#bCancel').onclick=()=>dlg.close();
+$('#bCancel').onclick=()=>{hideHints();dlg.close()};
 $('#bDel').onclick=()=>{if(confirm('Excluir este serviço?')){items=items.filter(i=>i.id!==S.edit);save();dlg.close();render()}};
 $('#bAdd').onclick=()=>openForm();
 
