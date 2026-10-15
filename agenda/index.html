@@ -141,8 +141,6 @@ main{max-width:780px;margin:auto;padding:12px}
 .suggestions small{font-size:11px;color:var(--mu);white-space:normal;overflow-wrap:anywhere}
 
 /* Status palette for scheduled work, completed projects, and lost opportunities */
-.status-legend{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:5px 0 0;padding:4px 1px;color:var(--mu);font-size:10px}
-.status-legend span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .legend-dot{display:inline-block;width:7px;height:7px;flex:none;border-radius:50%}
 .strip .evdots,.month-day .dots{display:flex;align-items:center;justify-content:center;gap:3px;min-height:6px}
 .strip .evdots i,.month-day .dots i{height:6px;width:6px;min-height:6px;border-radius:50%;display:inline-block}
@@ -156,6 +154,19 @@ main{max-width:780px;margin:auto;padding:12px}
 
 .hintempty{padding:11px 12px;font-size:12px;color:var(--mu);display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .suggestions button:focus-visible{outline:2px solid var(--ac);outline-offset:-2px}
+
+#bkp:empty{display:none}
+.month-close{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;margin:0 0 13px;border:1px solid var(--ln);border-radius:12px;background:var(--card)}
+.month-close b{font-size:13px;font-weight:750}
+.month-close span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.month-close small{font-size:11px;color:var(--mu)}
+.month-close button{font-size:12px;font-weight:750;white-space:nowrap;background:var(--ac);color:var(--on);min-height:34px;border-radius:9px}
+.report-summary{font-size:14px;color:var(--mu);margin:4px 0 12px;line-height:1.5}
+.report-actions{display:grid;gap:8px}
+.report-actions button{min-height:44px;padding:9px 12px;text-align:left;border:1px solid var(--ln);background:var(--card);font-size:13px;font-weight:700}
+.report-actions button.pri{background:var(--ac);border-color:var(--ac);color:var(--on)}
+.report-hint{font-size:12px;color:var(--mu);line-height:1.45;margin:12px 0}
+.report-close{width:100%;border:1px solid var(--ln);background:var(--card);font-weight:700;margin-top:3px}
 </style>
 </head>
 <body>
@@ -174,13 +185,6 @@ main{max-width:780px;margin:auto;padding:12px}
     <button type="button" data-view="month" aria-pressed="false">Mês</button>
   </div>
   <div id="strip" class="strip week-view" aria-label="Calendário"></div>
-  <div class="status-legend" aria-label="Cores dos agendamentos">
-    <span><i class="legend-dot" style="background:#289e60"></i>Concluído</span>
-    <span><i class="legend-dot" style="background:#dc434e"></i>Não fechado</span>
-    <span><i class="legend-dot" style="background:#fff;border:1px solid #8b9099"></i>Visita de orçamento</span>
-    <span><i class="legend-dot" style="background:#2a7be3"></i>Em andamento</span>
-    <span><i class="legend-dot" style="background:#8b5be7"></i>Aguardando confirmação</span>
-  </div>
   <button type="button" id="viewHandle" aria-label="Expandir calendário">
     <span class="chev" aria-hidden="true">⌃</span><span id="viewHint">Deslize para cima para expandir</span>
   </button>
@@ -209,6 +213,16 @@ main{max-width:780px;margin:auto;padding:12px}
   <label>Observações<textarea name="obs" rows="2"></textarea></label>
   <div class="fr"><button type="button" id="bCancel">Cancelar</button><button type="button" class="del" id="bDel">Excluir</button><button type="submit" class="pri">Salvar</button></div>
 </form></dialog>
+<dialog id="exportMonthDialog">
+  <h3 id="exportMonthTitle">Fechamento mensal</h3>
+  <p class="report-summary" id="exportMonthSummary"></p>
+  <div class="report-actions">
+    <button type="button" id="downloadMonthReport" class="pri">Baixar relatório do mês</button>
+    <button type="button" id="downloadFullBackup">Baixar backup completo (JSON)</button>
+  </div>
+  <p class="report-hint">O relatório é um arquivo HTML detalhado que pode ser impresso ou salvo em PDF. O backup JSON preserva todos os clientes e agendamentos para restauração. Os arquivos contêm dados privados.</p>
+  <button type="button" id="exportMonthClose" class="report-close">Fechar</button>
+</dialog>
 <dialog id="sdl">
   <h3>Atualizar status</h3>
   <p class="status-explainer">Escolha o andamento do serviço. A cor aparecerá no calendário.</p>
@@ -220,7 +234,8 @@ main{max-width:780px;margin:auto;padding:12px}
   <button id="mSem">Copiar semana</button>
   <button id="mTema">Modo claro/escuro</button>
   <button id="mLang"></button>
-  <button id="mExp">Exportar backup (JSON)</button>
+  <button id="mExp">Exportar backup completo (JSON)</button>
+  <button id="mReport">Relatório mensal detalhado</button>
   <button id="mImp">Importar backup (JSON)</button>
   <button id="mCli">Importar clientes (CSV)</button>
   <button id="mTxt">Importar de texto colado</button>
@@ -398,8 +413,11 @@ function render(){
  const scopeButton=!q&&mode!=='week'
     ?`<button type="button" class="scope" data-a="scope">${isPeriod?'Ver dia':'Ver mês completo'}</button>`:'';
  $('#dh').innerHTML=`<h2>${label}</h2><span>${L.length} ${L.length===1?'serviço':'serviços'}</span>${scopeButton}<button type="button" data-a="cd">Copiar</button>`;
- const old=items.length&&Date.now()-P.bk>7*864e5;
- $('#bkp').innerHTML=old?`<div class="bk"><span>Sem backup há mais de 7 dias.</span><button data-a="bk">Fazer backup</button></div>`:'';
+ const now=new Date(),lastDay=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+ const monthEnd=now.getDate()===lastDay;
+ $('#bkp').innerHTML=monthEnd
+  ?'<div class="month-close"><span><b>Fechamento do mês</b><small>Relatório detalhado e backup</small></span><button type="button" data-a="close-month">Exportar</button></div>'
+  :'';
  let rows='',lastDate='';
  for(const i of L){
    if((isPeriod||q)&&i.data!==lastDate){
@@ -660,8 +678,110 @@ $('#bMenu').onclick=()=>{lbl();mdl.showModal()};$('#mClose').onclick=()=>mdl.clo
 $('#mSem').onclick=()=>{mdl.close();copy(weekText(),'Semana copiada')};
 $('#mTema').onclick=()=>{const dark=matchMedia('(prefers-color-scheme: dark)').matches;const cur=P.theme||(dark?'dark':'light');P.theme=cur==='dark'?'light':'dark';save();render()};
 $('#mLang').onclick=()=>{P.lang=P.lang==='en'?'pt':'en';save();lbl()};
-function backup(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({items,clients},null,1)],{type:'application/json'}));a.download='agenda-backup-'+iso(new Date())+'.json';a.click();P.bk=Date.now();save();render();toast('Backup baixado')}
-$('#mExp').onclick=()=>{mdl.close();backup()};$('#bkp').onclick=e=>{if(e.target.dataset.a==='bk')backup()};
+function safeDownload(blob,fileName){
+ const url=URL.createObjectURL(blob);
+ const anchor=document.createElement('a');
+ anchor.href=url;
+ anchor.download=fileName;
+ document.body.appendChild(anchor);
+ anchor.click();
+ anchor.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),15000);
+}
+function backup(){
+ const data={items,clients};
+ safeDownload(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}),
+   'agenda-backup-'+iso(new Date())+'.json');
+ P.bk=Date.now();save();render();toast('Backup completo baixado');
+}
+const statusOrder=['Concluído','Não fechado','Visita de orçamento','Em andamento','Aguardando confirmação'];
+function reportRows(month){
+ return items.filter(i=>typeof i.data==='string'&&i.data.startsWith(month)).sort((a,b)=>iKey(a).localeCompare(iKey(b)));
+}
+function reportMonthName(month){
+ const [y,m]=month.split('-').map(Number);
+ return fmt(new Date(y,m-1,1),{month:'long',year:'numeric'});
+}
+function monthReportHTML(month){
+ const rows=reportRows(month);
+ const name=reportMonthName(month);
+ const generated=fmt(new Date(),{day:'2-digit',month:'long',year:'numeric'});
+ const counts=Object.fromEntries(statusOrder.map(st=>[st,0]));
+ for(const i of rows)counts[i.status]=(counts[i.status]||0)+1;
+ const chips=statusOrder.map(st=>'<span class="chip"><i style="background:'+SC[st]+';'+(st==='Visita de orçamento'?'border:1px solid #999;':'')+'"></i>'+esc(st)+': '+counts[st]+'</span>').join('');
+ const days=new Map();
+ for(const i of rows){if(!days.has(i.data))days.set(i.data,[]);days.get(i.data).push(i)}
+ const groups=[...days].map(([date,events])=>
+  '<section class="day"><h2>'+esc(fmt(prs(date),{weekday:'long',day:'2-digit',month:'long',year:'numeric'}))+
+  ' <small>('+events.length+' '+(events.length===1?'serviço':'serviços')+')</small></h2>'+
+  events.map(i=>'<article class="entry"><div class="entry-title"><b>'+esc(i.hora||'Horário não informado')+' · '+esc(i.cliente||'Cliente não informado')+'</b><span class="status" style="border-color:'+SC[i.status]+'">'+esc(i.status||'Aguardando confirmação')+'</span></div>'+
+    (i.tel?'<p><strong>Telefone:</strong> '+esc(i.tel)+'</p>':'')+
+    (i.endereco?'<p><strong>Endereço:</strong> '+esc(i.endereco)+'</p>':'')+
+    (i.servico?'<p><strong>Serviço:</strong> '+esc(i.servico)+'</p>':'')+
+    (i.valor?'<p><strong>Valor:</strong> '+esc(amount(i.valor))+'</p>':'')+
+    (i.obs?'<p><strong>Observações:</strong> '+esc(i.obs)+'</p>':'')+
+    '</article>').join('')+'</section>'
+ ).join('');
+ return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Relatório mensal · Next Finish Carpentry · ${esc(name)}</title>
+<style>
+@page{size:letter;margin:0.6in}
+*{box-sizing:border-box}
+body{margin:0;padding:28px;background:#f5f5f4;color:#202124;font:14px/1.5 system-ui,-apple-system,Arial,sans-serif}
+main{max-width:850px;margin:auto;background:#fff;padding:32px;border:1px solid #e5e5e5;border-radius:12px}
+header{border-bottom:4px solid #f4b91b;padding-bottom:14px;margin-bottom:20px}
+.eyebrow{color:#666;font-size:12px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+h1{font-size:26px;margin:6px 0}.period{font-size:17px;font-weight:750;text-transform:capitalize}
+.meta{color:#555;font-size:12px;margin-top:7px}
+.summary{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+.chip{font-size:12px;padding:5px 9px;border:1px solid #ddd;border-radius:16px;display:inline-flex;align-items:center;gap:6px}
+.chip i{width:8px;height:8px;border-radius:50%}
+.total{font-size:14px;font-weight:800;background:#fff5d9;border-radius:8px;padding:10px 12px}
+.day{margin:19px 0 24px;break-inside:avoid-page}
+.day h2{font-size:17px;text-transform:capitalize;border-bottom:1px solid #ddd;padding-bottom:7px;margin:0 0 10px}
+.day small{font-size:11px;color:#777;font-weight:400}
+.entry{padding:11px 12px;margin:9px 0;background:#fafafa;border-left:3px solid #f4b91b;border-radius:5px;break-inside:avoid}
+.entry-title{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:6px}
+.entry-title b{font-size:15px}.status{border:1px solid #aaa;border-radius:10px;padding:2px 7px;font-size:11px;white-space:nowrap}
+.entry p{margin:3px 0;overflow-wrap:anywhere}
+.empty{padding:28px 10px;color:#666;text-align:center}
+.actions{max-width:850px;margin:0 auto 15px;text-align:right}
+.actions button{background:#f4b91b;border:0;border-radius:10px;padding:10px 18px;font-size:14px;font-weight:750;cursor:pointer}
+.privacy{color:#777;font-size:11px;margin-top:22px}
+@media print{body{background:#fff;padding:0}main{padding:0;border:0;max-width:none}.actions{display:none}.entry{background:#fafafa!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}header{break-after:avoid}}
+</style></head>
+<body><div class="actions"><button onclick="window.print()">Imprimir / salvar em PDF</button></div>
+<main><header><div class="eyebrow">Next Finish Carpentry · Agenda de Serviços</div>
+<h1>Relatório mensal da agenda</h1><div class="period">${esc(name)}</div>
+<div class="meta">Gerado em ${esc(generated)} · Horários e dados extraídos da agenda deste dispositivo.</div></header>
+<div class="total">${rows.length} ${rows.length===1?'compromisso registrado':'compromissos registrados'}</div>
+<div class="summary">${chips}</div>
+${groups||'<p class="empty">Nenhum compromisso registrado neste mês.</p>'}
+<p class="privacy">Documento privado. Contém informações de clientes. Não compartilhe publicamente.</p>
+</main></body></html>`;
+}
+let selectedReportMonth='';
+function openReportDialog(useCurrentMonth=false){
+ const month=useCurrentMonth?iso(new Date()).slice(0,7):S.sel.slice(0,7);
+ selectedReportMonth=month;
+ $('#exportMonthTitle').textContent='Fechamento · '+reportMonthName(month);
+ const count=reportRows(month).length;
+ $('#exportMonthSummary').textContent=count+' compromisso'+(count===1?'':'s')+' neste mês. Escolha o relatório para imprimir/salvar em PDF, ou o backup JSON de toda a agenda.';
+ $('#exportMonthDialog').showModal();
+}
+function downloadMonthReport(month){
+ const html=monthReportHTML(month);
+ safeDownload(new Blob([html],{type:'text/html;charset=utf-8'}),'relatorio-agenda-'+month+'.html');
+ toast('Relatório mensal baixado');
+}
+$('#exportMonthClose').onclick=()=>$('#exportMonthDialog').close();
+$('#downloadMonthReport').onclick=()=>downloadMonthReport(selectedReportMonth);
+$('#downloadFullBackup').onclick=()=>backup();
+$('#bkp').onclick=e=>{if(e.target.closest('[data-a="close-month"]'))openReportDialog(true)};
+$('#mExp').onclick=()=>{mdl.close();backup()};
+$('#mReport').onclick=()=>{mdl.close();openReportDialog(false)};
 
 function parseClientCSV(source){
  const raw=String(source||'').replace(/^\uFEFF/,'');
