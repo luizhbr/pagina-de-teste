@@ -59,6 +59,14 @@ main{padding:10px 12px}
 .ac{display:flex;gap:6px;margin-top:8px}
 .ac button{flex:1;border:1px solid var(--ln);font-weight:600;min-height:40px}
 .ac .wa{color:var(--wa);border-color:var(--wa)}
+/* Small trash icon next to Editar, with a comfortable touch target. */
+.ac button.quick-delete{flex:0 0 40px;width:40px;min-width:40px;min-height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--rd);border-color:var(--ln);background:transparent}
+.ac button.quick-delete svg{width:17px;height:17px;stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.ac button.quick-delete:focus-visible{outline:2px solid var(--rd);outline-offset:2px}
+.delete-summary{margin:8px 0 4px;line-height:1.5;color:var(--mu);font-size:14px;overflow-wrap:anywhere}
+.delete-actions{display:flex;gap:8px;margin-top:18px}
+.delete-actions button{flex:1;min-height:44px;border:1px solid var(--ln);font-weight:700}
+.delete-actions .confirm-delete{color:#fff;background:#b53632;border-color:#b53632}
 .vazio{text-align:center;color:var(--mu);padding:36px 10px}
 .fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:52px;height:52px;border-radius:26px;background:var(--ac);color:var(--on);font-size:28px;padding:0;box-shadow:0 3px 10px #0004}
 .bk{font-size:13px;color:var(--rd);margin-bottom:8px;display:flex;gap:8px;align-items:center}
@@ -126,6 +134,9 @@ main{max-width:780px;margin:auto;padding:12px}
 .fab{background:var(--ac);color:#151515;font-weight:700;width:56px;height:56px;border-radius:18px;box-shadow:0 5px 18px #0003}
 .dt a,.dh button:not(.scope){color:var(--tx)}
 .pri{background:var(--ac);color:#151515}
+/* The month calendar must scroll with the page, never overlay the service list. */
+body.month-mode header{position:relative;top:auto;z-index:auto}
+body.month-mode main{position:relative;z-index:0}
 @media(min-width:660px){.month-day{height:62px}}
 @media(max-width:380px){.brandmark{display:none}#range{font-size:14px}.nav button{min-width:34px}.mini-grid span{font-size:8px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
@@ -144,7 +155,7 @@ main{max-width:780px;margin:auto;padding:12px}
 .legend-dot{display:inline-block;width:7px;height:7px;flex:none;border-radius:50%}
 .strip .evdots,.month-day .dots{display:flex;align-items:center;justify-content:center;gap:3px;min-height:6px}
 .strip .evdots i,.month-day .dots i{height:6px;width:6px;min-height:6px;border-radius:50%;display:inline-block}
-.row .pill{font-size:11px;border-radius:20px;max-width:116px;padding:0 8px;white-space:nowrap}
+.row .pill{font-size:11px;border-radius:16px;flex:0 0 auto;max-width:min(43%,170px);min-width:0;min-height:34px;height:auto;padding:5px 8px;white-space:normal;overflow-wrap:anywhere;line-height:1.2;text-align:center}
 .status-options{display:grid;grid-template-columns:1fr;gap:5px;margin-top:12px}
 .status-options button{min-height:43px;border:1px solid var(--ln);border-radius:10px;display:flex;align-items:center;gap:9px;text-align:left;background:var(--card);font-size:14px;font-weight:650}
 .status-options .legend-dot{width:9px;height:9px}
@@ -213,6 +224,15 @@ main{max-width:780px;margin:auto;padding:12px}
   <label>Observações<textarea name="obs" rows="2"></textarea></label>
   <div class="fr"><button type="button" id="bCancel">Cancelar</button><button type="button" class="del" id="bDel">Excluir</button><button type="submit" class="pri">Salvar</button></div>
 </form></dialog>
+<dialog id="quickDeleteDlg">
+  <h3>Excluir compromisso?</h3>
+  <p class="delete-summary" id="deleteSummary"></p>
+  <p class="delete-summary">Essa ação exclui apenas este compromisso da agenda e não pode ser desfeita sem um backup.</p>
+  <div class="delete-actions">
+    <button type="button" id="quickDeleteCancel">Cancelar</button>
+    <button type="button" id="quickDeleteConfirm" class="confirm-delete">Sim, excluir</button>
+  </div>
+</dialog>
 <dialog id="exportMonthDialog">
   <h3 id="exportMonthTitle">Fechamento mensal</h3>
   <p class="report-summary" id="exportMonthSummary"></p>
@@ -323,6 +343,7 @@ function setView(next){
   P.view=next;
   save();
   render();
+  window.scrollTo(0,0);
 }
 
 function goToDay(day){
@@ -351,6 +372,7 @@ function moveBy(n){
 
 function render(){
  document.documentElement.dataset.theme=P.theme;
+ document.body.classList.toggle('month-mode',S.view==='month');
  const today=iso(new Date()),selected=prs(S.sel),ws=prs(S.ws);
  const we=new Date(ws);we.setDate(we.getDate()+6);
  const mode=S.view;
@@ -428,7 +450,7 @@ function render(){
    rows+=`<div class="row" data-id="${esc(i.id)}">
      <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora||'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><button type="button" class="pill" data-a="st" style="${badgeStyle(i.status)}">${esc(i.status)}</button></div>
      ${o?`<div class="dt">${i.endereco?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco)}">${esc(i.endereco)}</a>`:''}${i.servico?`<p>${esc(i.servico)}</p>`:''}${i.valor?`<p><b>${esc(i.valor)}</b></p>`:''}${i.obs?`<p class="mu">${esc(i.obs)}</p>`:''}
-       <div class="ac"><button type="button" class="wa" data-a="sms">SMS</button><button type="button" data-a="rp">Repetir</button><button type="button" data-a="ed">Editar</button></div></div>`:''}
+       <div class="ac"><button type="button" class="wa" data-a="sms">SMS</button><button type="button" data-a="rp">Repetir</button><button type="button" data-a="ed">Editar</button><button type="button" class="quick-delete" data-a="del" aria-label="Excluir serviço de ${esc(i.cliente||'cliente')}" title="Excluir serviço"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14M10 10v7M14 10v7"/></svg></button></div></div>`:''}
    </div>`;
  }
  $('#list').innerHTML=L.length?`<div class="box">${rows}</div>`:`<div class="vazio">${q?'Nada encontrado.':'Nenhum serviço neste período.'}</div>`;
@@ -630,6 +652,32 @@ $('#statusOptions').onclick=e=>{
  save();$('#sdl').close();render();toast('Status atualizado');
 };
 $('#statusClose').onclick=()=>$('#sdl').close();
+
+function openQuickDelete(i){
+ if(!i||!items.some(x=>x.id===i.id))return;
+ S.deleteId=i.id;
+ const when=fmt(prs(i.data),{day:'2-digit',month:'2-digit',year:'numeric'});
+ $('#deleteSummary').textContent=(i.cliente||'Cliente')+' · '+when+(i.hora?' às '+i.hora:'');
+ $('#quickDeleteDlg').showModal();
+}
+function closeQuickDelete(){
+ S.deleteId=null;
+ $('#quickDeleteDlg').close();
+}
+$('#quickDeleteCancel').onclick=closeQuickDelete;
+$('#quickDeleteDlg').addEventListener('close',()=>{S.deleteId=null});
+$('#quickDeleteConfirm').onclick=()=>{
+ const id=S.deleteId;
+ if(!id)return closeQuickDelete();
+ if(!items.some(i=>i.id===id))return closeQuickDelete();
+ items=items.filter(i=>i.id!==id);
+ S.open=null;
+ S.deleteId=null;
+ save();
+ $('#quickDeleteDlg').close();
+ render();
+ toast('Compromisso excluído');
+};
 $('#list').onclick=e=>{
  const row=e.target.closest('.row');if(!row)return;
  const i=items.find(x=>x.id===row.dataset.id),b=e.target.closest('button');
@@ -638,6 +686,7 @@ $('#list').onclick=e=>{
  if(b.dataset.a==='st')openStatus(i);
  else if(b.dataset.a==='sms')sms(i);
  else if(b.dataset.a==='ed')openForm(i);
+ else if(b.dataset.a==='del')openQuickDelete(i);
  else if(b.dataset.a==='rp')openForm({cliente:i.cliente,tel:i.tel,endereco:i.endereco,data:S.sel,status:'Aguardando confirmação'},true);
 };
 
