@@ -528,7 +528,8 @@ function blk(i){
    i.tel||'',
    i.endereco?'📍 '+i.endereco:'',
    i.servico?'_'+String(i.servico).trim()+'_':'',
-   amount(i.valor)
+   amount(i.valor),
+   i.status?'Status: '+String(i.status).trim():''
  ].filter(Boolean).join('\n\n');
 }
 function appointmentText(entries){
