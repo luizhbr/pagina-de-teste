@@ -221,6 +221,21 @@ body.month-mode main{position:relative;z-index:0}
 .time-picker-actions{display:flex;gap:8px}
 .time-picker-actions button{flex:1;min-height:46px;border:1px solid var(--ln);font-size:14px;font-weight:750}
 @media(max-width:360px){.time-picker-wheels{gap:5px}.time-wheel .wheel-option{font-size:18px}.time-period-col{flex-basis:58px}}
+
+.card-side{display:flex;align-items:center;flex-direction:column;gap:0;min-width:0;max-width:44%;flex:0 0 auto}
+.card-side .pill{max-width:100%;width:auto}
+.card-side .single-copy{min-height:25px;width:36px;height:25px;padding:2px 7px;display:flex;align-items:center;justify-content:center;color:var(--mu)}
+.card-side .single-copy svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round;pointer-events:none}
+.card-side .single-copy:focus-visible{color:var(--ac)}
+.photo-field{margin-top:10px;color:var(--mu);font-size:12px}
+.photo-upload-row{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.photo-upload-row button{border:1px solid var(--ln);background:var(--card);font-size:12px;min-height:36px}
+.photo-upload-row #photoRemove{color:var(--rd)}
+.photo-upload-row img{width:58px;height:58px;object-fit:cover;border-radius:8px;border:1px solid var(--ln)}
+.photo-field small{display:block;margin-top:5px;font-size:11px}
+.service-photo{display:flex;gap:10px;align-items:center;margin:10px 0}
+.service-photo img{width:64px;height:64px;object-fit:cover;border-radius:9px;border:1px solid var(--ln)}
+.service-photo .share-photo{border:1px solid var(--ln);font-size:12px;min-height:36px}
 </style>
 </head>
 <body>
@@ -265,6 +280,7 @@ body.month-mode main{position:relative;z-index:0}
   <div class="g2"><label>Telefone<input name="tel" type="tel" inputmode="tel"></label><label>Valor<input name="valor" placeholder="$150"></label></div>
   <label>Status<select name="status"><option>Concluído</option><option>Não fechado</option><option>Visita de orçamento</option><option>Em andamento</option><option>Aguardando confirmação</option></select></label>
   <label>Observações<textarea name="obs" rows="2"></textarea></label>
+  <div class="photo-field"><span>Foto do serviço (opcional)</span><div class="photo-upload-row"><button type="button" id="photoPick">Adicionar foto</button><button type="button" id="photoRemove" hidden>Remover</button><img id="photoPreview" hidden alt="Foto anexada ao compromisso"></div><small>A imagem será reduzida e guardada só neste aparelho.</small><input id="photoFile" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/*" hidden></div>
   <div class="fr"><button type="button" id="bCancel">Cancelar</button><button type="button" class="del" id="bDel">Excluir</button><button type="submit" class="pri">Salvar</button></div>
 </form></dialog>
 <dialog id="timePickerDlg" aria-labelledby="timePickerTitle">
@@ -505,8 +521,8 @@ function render(){
    }
    const o=S.open===i.id;
    rows+=`<div class="row" data-id="${esc(i.id)}">
-     <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora?h12(i.hora):'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><button type="button" class="pill" data-a="st" style="${badgeStyle(i.status)}">${esc(i.status)}</button></div>
-     ${o?`<div class="dt">${i.endereco?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco)}">${esc(i.endereco)}</a>`:''}${i.servico?`<p>${esc(i.servico)}</p>`:''}${i.valor?`<p><b>${esc(i.valor)}</b></p>`:''}${i.obs?`<p class="mu">${esc(i.obs)}</p>`:''}
+     <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora?h12(i.hora):'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><div class="card-side"><button type="button" class="pill" data-a="st" style="${badgeStyle(i.status)}">${esc(i.status)}</button><button type="button" class="single-copy" data-a="copy-one" aria-label="Copiar somente o compromisso de ${esc(i.cliente)}" title="Copiar compromisso"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2"/></svg></button></div></div>
+     ${o?`<div class="dt">${i.endereco?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco)}">${esc(i.endereco)}</a>`:''}${i.servico?`<p>${esc(i.servico)}</p>`:''}${i.valor?`<p><b>${esc(i.valor)}</b></p>`:''}${i.obs?`<p class="mu">${esc(i.obs)}</p>`:''}${validPhoto(i.foto)?`<div class="service-photo"><img src="${i.foto}" alt="Imagem de referência do serviço"><button type="button" data-a="share-one" class="share-photo">Compartilhar foto + serviço</button></div>`:''}
        <div class="ac"><button type="button" class="wa" data-a="sms">SMS</button><button type="button" data-a="rp">Repetir</button><button type="button" data-a="ed">Editar</button><button type="button" class="quick-delete" data-a="del" aria-label="Excluir serviço de ${esc(i.cliente||'cliente')}" title="Excluir serviço"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14M10 10v7M14 10v7"/></svg></button></div></div>`:''}
    </div>`;
  }
@@ -785,9 +801,62 @@ $('#timeConfirm').onclick=()=>{
  closeTimePicker();
 };
 
-function openForm(i,novo){hideHints();S.edit=i&&!novo?i.id:null;$('#dt').textContent=S.edit?'Editar serviço':'Novo serviço';$('#bDel').style.display=S.edit?'':'none';
+
+/* One small reference photo per appointment, stored locally with the JSON backup. */
+let photoDraft='';
+function validPhoto(value){
+ return typeof value==='string'&&/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(value)&&value.length<=180000;
+}
+function syncPhotoPreview(){
+ const has=validPhoto(photoDraft);
+ $('#photoPreview').hidden=!has;
+ $('#photoRemove').hidden=!has;
+ if(has)$('#photoPreview').src=photoDraft;
+ else $('#photoPreview').removeAttribute('src');
+}
+$('#photoPick').onclick=()=>$('#photoFile').click();
+$('#photoRemove').onclick=()=>{photoDraft='';syncPhotoPreview()};
+$('#photoFile').onchange=async e=>{
+ const file=e.target.files?.[0];e.target.value='';
+ if(!file)return;
+ if(!/^image\//.test(file.type)){toast('Escolha um arquivo de imagem');return}
+ if(file.size>12*1024*1024){toast('Foto muito grande (limite 12 MB)');return}
+ try{
+  const img=await createImageBitmap(file);
+  const max=360,scale=Math.min(1,max/Math.max(img.width,img.height));
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.max(1,Math.round(img.width*scale));
+  canvas.height=Math.max(1,Math.round(img.height*scale));
+  canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+  img.close?.();
+  const compressed=canvas.toDataURL('image/jpeg',0.65);
+  if(!validPhoto(compressed))throw Error('Foto excede o limite compactado.');
+  photoDraft=compressed;syncPhotoPreview();toast('Foto anexada');
+ }catch(err){toast('Não foi possível processar essa foto. Tente JPG ou PNG.')}
+};
+async function shareAppointment(i){
+ const text=blk(i);
+ if(!validPhoto(i.foto)){await copy(text,'Compromisso copiado');return}
+ try{
+  const response=await fetch(i.foto);
+  const blob=await response.blob();
+  const file=new File([blob],'servico-'+i.data+'.jpg',{type:'image/jpeg'});
+  if(navigator.share&&navigator.canShare?.({files:[file]})){
+   await navigator.share({files:[file],text,title:'Agenda NFC — '+i.cliente});
+   return;
+  }
+  await copy(text,'Texto copiado; foto baixada separadamente');
+  safeDownload(blob,'servico-'+i.data+'.jpg');
+ }catch(err){
+  if(err?.name==='AbortError')return;
+  await copy(text,'Texto copiado. Compartilhe a foto separadamente');
+ }
+}
+
+function openForm(i,novo){hideHints();S.edit=i&&!novo?i.id:null;photoDraft=validPhoto(i?.foto)?i.foto:'';syncPhotoPreview();$('#dt').textContent=S.edit?'Editar serviço':'Novo serviço';$('#bDel').style.display=S.edit?'':'none';
   const v=i||{data:S.sel,status:'Aguardando confirmação'};for(const e of fm.elements)if(e.name)e.value=v[e.name]??'';updateTimeDisplay();dlg.showModal()}
 fm.addEventListener('submit',()=>{const o={};for(const x of fm.elements)if(x.name)o[x.name]=x.value.trim();
+  o.foto=photoDraft;
   if(S.edit){Object.assign(items.find(i=>i.id===S.edit),o)}else items.push({id:uid(),...o});
   upCl(o);save();S.sel=o.data;S.ws=iso(mon(prs(o.data)));render();toast('Salvo')});
 $('#bCancel').onclick=()=>{hideHints();dlg.close()};
@@ -842,6 +911,8 @@ $('#list').onclick=e=>{
  if(!i)return;
  if(!b){if(e.target.closest('a'))return;S.open=S.open===i.id?null:i.id;return render()}
  if(b.dataset.a==='st')openStatus(i);
+ else if(b.dataset.a==='copy-one')copy(blk(i),'Compromisso copiado');
+ else if(b.dataset.a==='share-one')shareAppointment(i);
  else if(b.dataset.a==='sms')sms(i);
  else if(b.dataset.a==='ed')openForm(i);
  else if(b.dataset.a==='del')openQuickDelete(i);
