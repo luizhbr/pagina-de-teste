@@ -236,7 +236,8 @@ body.month-mode main{position:relative;z-index:0}
 .service-photo{display:flex;gap:10px;align-items:center;margin:10px 0}
 .service-photo img{width:64px;height:64px;object-fit:cover;border-radius:9px;border:1px solid var(--ln)}
 .service-photo .share-photo{border:1px solid var(--ln);font-size:12px;min-height:36px}
-#leadValueField[hidden]{display:none!important}
+#leadValueField{display:none}
+#leadValueField.is-visible{display:block}
 #leadValueField input{font-variant-numeric:tabular-nums}
 #leadValueField small{display:block;font-size:11px;margin-top:4px;color:var(--mu)}
 </style>
@@ -282,7 +283,7 @@ body.month-mode main{position:relative;z-index:0}
   <label>Serviço<textarea name="servico" rows="2"></textarea></label>
   <div class="g2"><label>Telefone<input name="tel" type="tel" inputmode="tel"></label><label>Valor<input name="valor" placeholder="$150"></label></div>
   <label>Status<select name="status"><option>Concluído</option><option>Não fechado</option><option>Visita de orçamento</option><option>Em andamento</option><option>Aguardando confirmação</option></select></label>
-  <label id="leadValueField" hidden>Valor do lead<input name="valorLead" type="text" inputmode="decimal" placeholder="$150" autocomplete="off"><small>Valor do lead, separado do valor do serviço.</small></label>
+  <label id="leadValueField" style="display:none">Valor do lead<input name="valorLead" type="text" inputmode="decimal" placeholder="$150" autocomplete="off"><small>Valor do lead, separado do valor do serviço.</small></label>
   <label>Observações<textarea name="obs" rows="2"></textarea></label>
   <div class="photo-field"><span>Foto do serviço (opcional)</span><div class="photo-upload-row"><button type="button" id="photoPick">Adicionar foto</button><button type="button" id="photoRemove" hidden>Remover</button><img id="photoPreview" hidden alt="Foto anexada ao compromisso"></div><small>A imagem será reduzida e guardada só neste aparelho.</small><input id="photoFile" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/*" hidden></div>
   <div class="fr"><button type="button" id="bCancel">Cancelar</button><button type="button" class="del" id="bDel">Excluir</button><button type="submit" class="pri">Salvar</button></div>
@@ -858,13 +859,18 @@ async function shareAppointment(i){
 }
 
 function updateLeadValueField(){
- const show=fm.elements.status.value==='Visita de orçamento';
- $('#leadValueField').hidden=!show;
+ const status=String(fm.elements.status.value||'').trim();
+ const show=status==='Visita de orçamento';
+ const field=$('#leadValueField');
+ field.classList.toggle('is-visible',show);
+ field.style.display=show?'block':'none';
+ field.hidden=!show;
  fm.elements.valorLead.disabled=!show;
 }
 fm.elements.status.addEventListener('change',updateLeadValueField);
+fm.elements.status.addEventListener('input',updateLeadValueField);
 function openForm(i,novo){hideHints();S.edit=i&&!novo?i.id:null;photoDraft=validPhoto(i?.foto)?i.foto:'';syncPhotoPreview();$('#dt').textContent=S.edit?'Editar serviço':'Novo serviço';$('#bDel').style.display=S.edit?'':'none';
-  const v=i||{data:S.sel,status:'Aguardando confirmação'};for(const e of fm.elements)if(e.name)e.value=v[e.name]??'';updateLeadValueField();updateTimeDisplay();dlg.showModal()}
+  const v=i||{data:S.sel,status:'Aguardando confirmação'};for(const e of fm.elements)if(e.name)e.value=v[e.name]??'';updateTimeDisplay();dlg.showModal();updateLeadValueField()}
 fm.addEventListener('submit',()=>{const o={};for(const x of fm.elements)if(x.name&&!x.disabled)o[x.name]=x.value.trim();
   if(S.edit&&fm.elements.status.value!=='Visita de orçamento')o.valorLead=items.find(i=>i.id===S.edit)?.valorLead||'';
   o.foto=photoDraft;
