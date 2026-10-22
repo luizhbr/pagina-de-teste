@@ -598,7 +598,7 @@ function msg(i){const d=prs(i.data);
   return`Hi ${i.cliente}, this is Luiz from Next Finish Carpentry. Confirming our appointment on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${i.hora?' at '+h12(i.hora):''}${i.endereco?' at '+i.endereco:''}. Does that still work for you?`}
 function reviewMessage(i){
  const name=String(i.cliente||'').trim().split(/\s+/)[0];
- return (name?'Hi '+name+'!':'Hi!')+" Thank you for choosing Next Finish Carpentry! I’m glad I could help with your project. If you’re happy with the work, I’d really appreciate it if you could leave a review on Google and Thumbtack. Your feedback means a lot to my small business!\\n\\nGoogle: https://maps.app.goo.gl/p8SV8jwYvnAvxvHj7?g_st=ac\\n\\nThumbtack: https://www.thumbtack.com/reviews/services/576942793783222282/write-customer-review\\n\\nThank you again!";
+ return (name?'Hi '+name+'!':'Hi!')+" Thank you for choosing Next Finish Carpentry! I’m glad I could help with your project. If you’re happy with the work, I’d really appreciate it if you could leave a review on Google and Thumbtack. Your feedback means a lot to my small business!\n\nGoogle: https://maps.app.goo.gl/p8SV8jwYvnAvxvHj7?g_st=ac\n\nThumbtack: https://www.thumbtack.com/reviews/services/576942793783222282/write-customer-review\n\nThank you again!";
 }
 function requestReview(i){
  if(i.status!=='Concluído')return;
