@@ -242,6 +242,10 @@ body.month-mode main{position:relative;z-index:0}
 #leadValueField small{display:block;font-size:11px;margin-top:4px;color:var(--mu)}
 .dh .finish-day{color:#289e60;border:1px solid #289e60;border-radius:10px;min-height:34px;font-size:12px;font-weight:700;padding:0 10px}
 .dh .finish-day:focus-visible{outline-color:#289e60}
+.visit-done-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:12px;margin-top:14px;color:var(--tx);font-size:14px;font-weight:650}
+.visit-done-row[hidden],#visitDoneHint[hidden]{display:none!important}
+.visit-done-row input{width:22px;height:22px;accent-color:#289e60;flex:0 0 auto;margin:0}
+#visitDoneHint{margin-top:7px;line-height:1.45}
 </style>
 </head>
 <body>
@@ -333,6 +337,8 @@ body.month-mode main{position:relative;z-index:0}
   <h3>Atualizar status</h3>
   <p class="status-explainer">Escolha o andamento do serviço. A cor aparecerá no calendário.</p>
   <div id="statusOptions" class="status-options"></div>
+  <label id="visitDoneRow" class="visit-done-row" hidden><input type="checkbox" id="visitDoneCheck"><span>Visita de orçamento realizada</span></label>
+  <p id="visitDoneHint" class="status-explainer" hidden>A visita fica marcada em verde nesta lista, mas continua branca nas bolinhas do calendário. O status do serviço não muda.</p>
   <div class="fr"><button type="button" id="statusClose">Cancelar</button></div>
 </dialog>
 <dialog id="mdl"><div class="menu">
@@ -390,7 +396,8 @@ function dotStyle(status){
  const border=status==='Visita de orçamento'?'#8b9099':color;
  return 'background-color:'+color+';border:1px solid '+border;
 }
-function badgeStyle(status){
+function badgeStyle(status,visitDone=false){
+ if(status==='Visita de orçamento'&&visitDone)return 'color:#ffffff;border-color:#289e60;background-color:#289e60';
  if(status==='Visita de orçamento')return 'color:#292e36;border-color:#858b93;background-color:#ffffff';
  const color=SC[status]||SC['Aguardando confirmação'];
  return 'color:'+color+';border-color:'+color;
@@ -534,7 +541,7 @@ function render(){
    }
    const o=S.open===i.id;
    rows+=`<div class="row" data-id="${esc(i.id)}">
-     <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora?h12(i.hora):'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><div class="card-side"><button type="button" class="pill" data-a="st" style="${badgeStyle(i.status)}">${esc(i.status)}</button><button type="button" class="single-copy" data-a="copy-one" aria-label="Copiar somente o compromisso de ${esc(i.cliente)}" title="Copiar compromisso"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2"/></svg></button></div></div>
+     <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora?h12(i.hora):'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><div class="card-side"><button type="button" class="pill" data-a="st" style="${badgeStyle(i.status,i.visitaConcluida===true)}">${esc(i.status)}</button><button type="button" class="single-copy" data-a="copy-one" aria-label="Copiar somente o compromisso de ${esc(i.cliente)}" title="Copiar compromisso"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2"/></svg></button></div></div>
      ${o?`<div class="dt">${i.endereco?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco)}">${esc(i.endereco)}</a>`:''}${i.servico?`<p>${esc(i.servico)}</p>`:''}${i.valor?`<p><b>${esc(i.valor)}</b></p>`:''}${i.obs?`<p class="mu">${esc(i.obs)}</p>`:''}${validPhoto(i.foto)?`<div class="service-photo"><img src="${i.foto}" alt="Imagem de referência do serviço"><button type="button" data-a="share-one" class="share-photo">Compartilhar foto + serviço</button></div>`:''}
        <div class="ac"><button type="button" class="wa" data-a="sms">SMS</button><button type="button" data-a="rp">Repetir</button><button type="button" data-a="ed">Editar</button><button type="button" class="quick-delete" data-a="del" aria-label="Excluir serviço de ${esc(i.cliente||'cliente')}" title="Excluir serviço"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14M10 10v7M14 10v7"/></svg></button></div></div>`:''}
    </div>`;
@@ -888,8 +895,23 @@ $('#bCancel').onclick=()=>{hideHints();dlg.close()};
 $('#bDel').onclick=()=>{if(confirm('Excluir este serviço?')){items=items.filter(i=>i.id!==S.edit);save();dlg.close();render()}};
 $('#bAdd').onclick=()=>openForm();
 
+function updateVisitDoneControl(){
+ const i=items.find(x=>x.id===S.statusId);
+ const visible=i?.status==='Visita de orçamento';
+ $('#visitDoneRow').hidden=!visible;
+ $('#visitDoneHint').hidden=!visible;
+ $('#visitDoneCheck').checked=visible&&i.visitaConcluida===true;
+}
+$('#visitDoneCheck').onchange=e=>{
+ const i=items.find(x=>x.id===S.statusId);
+ if(!i||i.status!=='Visita de orçamento')return;
+ i.visitaConcluida=Boolean(e.target.checked);
+ save();render();
+ toast(i.visitaConcluida?'Visita realizada':'Visita ainda não realizada');
+};
 function openStatus(i){
  S.statusId=i.id;
+ updateVisitDoneControl();
  $('#statusOptions').innerHTML=ST.map(st=>
    '<button type="button" data-choice="'+esc(st)+'" aria-current="'+String(i.status===st)+'"><i class="legend-dot" style="'+dotStyle(st)+'"></i>'+esc(st)+'</button>'
  ).join('');
