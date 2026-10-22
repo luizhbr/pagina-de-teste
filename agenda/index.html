@@ -240,6 +240,8 @@ body.month-mode main{position:relative;z-index:0}
 #leadValueField.is-visible{display:block}
 #leadValueField input{font-variant-numeric:tabular-nums}
 #leadValueField small{display:block;font-size:11px;margin-top:4px;color:var(--mu)}
+.dh .finish-day{color:#289e60;border:1px solid #289e60;border-radius:10px;min-height:34px;font-size:12px;font-weight:700;padding:0 10px}
+.dh .finish-day:focus-visible{outline-color:#289e60}
 </style>
 </head>
 <body>
@@ -301,6 +303,12 @@ body.month-mode main{position:relative;z-index:0}
     <button type="button" id="timeClear" class="time-clear">Sem horário</button>
     <div class="time-picker-actions"><button type="button" id="timeCancel">Cancelar</button><button type="button" id="timeConfirm" class="pri">Confirmar</button></div>
   </div>
+</dialog>
+<dialog id="finishDayDlg">
+  <h3>Concluir todos do dia?</h3>
+  <p id="finishDaySummary" class="delete-summary"></p>
+  <p class="delete-summary">Somente os compromissos desta data terão o status alterado para Concluído. Você ainda poderá mudar cada status individualmente.</p>
+  <div class="delete-actions"><button type="button" id="finishDayCancel">Cancelar</button><button type="button" id="finishDayConfirm" class="pri">Sim, concluir todos</button></div>
 </dialog>
 <dialog id="quickDeleteDlg">
   <h3>Excluir compromisso?</h3>
@@ -512,7 +520,7 @@ function render(){
  const label=q?'Resultados':isPeriod?periodTitle:dayTitle;
  const scopeButton=!q&&mode!=='week'
     ?`<button type="button" class="scope" data-a="scope">${isPeriod?'Ver dia':'Ver mês completo'}</button>`:'';
- $('#dh').innerHTML=`<h2>${label}</h2><span>${L.length} ${L.length===1?'serviço':'serviços'}</span>${scopeButton}<button type="button" data-a="cd">Copiar</button>`;
+ $('#dh').innerHTML=`<h2>${label}</h2><span>${L.length} ${L.length===1?'serviço':'serviços'}</span>${scopeButton}<button type="button" data-a="cd">Copiar</button>${!q&&S.scope==='day'&&items.some(i=>i.data===S.sel&&i.status!=='Concluído')?'<button type="button" class="finish-day" data-a="finish-day">Concluir todos do dia</button>':''}`;
  const now=new Date(),lastDay=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
  const monthEnd=now.getDate()===lastDay;
  $('#bkp').innerHTML=monthEnd
@@ -936,7 +944,28 @@ $('#list').onclick=e=>{
  else if(b.dataset.a==='rp')openForm({cliente:i.cliente,tel:i.tel,endereco:i.endereco,data:S.sel,status:'Aguardando confirmação'},true);
 };
 
+let finishDaySelected=null;
+function dayToFinish(day){return items.filter(i=>i.data===day&&i.status!=='Concluído')}
+function askFinishDay(){
+ const eligible=dayToFinish(S.sel);
+ if(!eligible.length){toast('Todos os serviços deste dia já estão concluídos');return}
+ finishDaySelected=S.sel;
+ $('#finishDaySummary').textContent=eligible.length+' serviço'+(eligible.length===1?'':'s')+' de '+fmt(prs(S.sel),{day:'2-digit',month:'long',year:'numeric'})+' serão marcados como Concluído.';
+ $('#finishDayDlg').showModal();
+}
+$('#finishDayCancel').onclick=()=>$('#finishDayDlg').close();
+$('#finishDayDlg').addEventListener('close',()=>{finishDaySelected=null});
+$('#finishDayConfirm').onclick=()=>{
+ const date=finishDaySelected;
+ if(!date)return;
+ const eligible=dayToFinish(date);
+ eligible.forEach(i=>i.status='Concluído');
+ finishDaySelected=null;
+ $('#finishDayDlg').close();
+ if(eligible.length){save();render();toast(eligible.length+' serviço'+(eligible.length===1?'':'s')+' concluído'+(eligible.length===1?'':'s'))}
+};
 $('#dh').onclick=e=>{
+  if(e.target.closest('[data-a="finish-day"]')){askFinishDay();return}
   if(e.target.dataset.a==='cd')copy(S.scope==='period'&&S.view!=='week'?periodText() : dayText(S.sel),'Agenda copiada');
   if(e.target.dataset.a==='scope'){S.scope=S.scope==='period'?'day':'period';S.open=null;render()}
 };
