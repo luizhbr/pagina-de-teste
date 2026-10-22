@@ -249,6 +249,7 @@ body.month-mode main{position:relative;z-index:0}
 .visit-check-inline{display:flex;align-items:center;justify-content:center;gap:5px;margin:4px 0 0;padding:2px 0;cursor:pointer;font-size:10px;color:var(--mu);line-height:1.2;text-align:center;white-space:normal}
 .visit-check-inline input{width:16px;height:16px;margin:0;flex:0 0 auto;accent-color:#289e60}
 .visit-check-inline span{max-width:74px}
+.ac .review-request{border:1px solid #289e60;color:#248451;font-weight:700}
 </style>
 </head>
 <body>
@@ -547,7 +548,7 @@ function render(){
    rows+=`<div class="row" data-id="${esc(i.id)}">
      <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora?h12(i.hora):'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><div class="card-side"><button type="button" class="pill" data-a="st" style="${badgeStyle(i.status,visitDaily&&i.visitaConcluida===true)}">${esc(i.status)}</button>${visitDaily?`<label class="visit-check-inline"><input type="checkbox" data-a="visit-check" aria-label="Visita realizada: ${esc(i.cliente)}" ${i.visitaConcluida===true?'checked':''}><span>Visita realizada</span></label>`:''}<button type="button" class="single-copy" data-a="copy-one" aria-label="Copiar somente o compromisso de ${esc(i.cliente)}" title="Copiar compromisso"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2"/></svg></button></div></div>
      ${o?`<div class="dt">${i.endereco?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco)}">${esc(i.endereco)}</a>`:''}${i.servico?`<p>${esc(i.servico)}</p>`:''}${i.valor?`<p><b>${esc(i.valor)}</b></p>`:''}${i.obs?`<p class="mu">${esc(i.obs)}</p>`:''}${validPhoto(i.foto)?`<div class="service-photo"><img src="${i.foto}" alt="Imagem de referência do serviço"><button type="button" data-a="share-one" class="share-photo">Compartilhar foto + serviço</button></div>`:''}
-       <div class="ac"><button type="button" class="wa" data-a="sms">SMS</button><button type="button" data-a="rp">Repetir</button><button type="button" data-a="ed">Editar</button><button type="button" class="quick-delete" data-a="del" aria-label="Excluir serviço de ${esc(i.cliente||'cliente')}" title="Excluir serviço"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14M10 10v7M14 10v7"/></svg></button></div></div>`:''}
+       <div class="ac"><button type="button" class="wa" data-a="sms">SMS</button>${i.status==='Concluído'?'<button type="button" class="review-request" data-a="review">Pedir avaliação</button>':''}<button type="button" data-a="rp">Repetir</button><button type="button" data-a="ed">Editar</button><button type="button" class="quick-delete" data-a="del" aria-label="Excluir serviço de ${esc(i.cliente||'cliente')}" title="Excluir serviço"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14M10 10v7M14 10v7"/></svg></button></div></div>`:''}
    </div>`;
  }
  $('#list').innerHTML=L.length?`<div class="box">${rows}</div>`:`<div class="vazio">${q?'Nada encontrado.':'Nenhum serviço neste período.'}</div>`;
@@ -595,6 +596,18 @@ async function copy(t,ok){try{await navigator.clipboard.writeText(t)}catch(e){co
 function msg(i){const d=prs(i.data);
   if(P.lang==='pt')return`Olá ${i.cliente}, aqui é o Luiz da Next Finish Carpentry. Confirmando nosso serviço ${fmt(d,{weekday:'long',day:'numeric',month:'long'})}${i.hora?' às '+h12(i.hora):''}${i.endereco?' em '+i.endereco:''}. Tudo certo?`;
   return`Hi ${i.cliente}, this is Luiz from Next Finish Carpentry. Confirming our appointment on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${i.hora?' at '+h12(i.hora):''}${i.endereco?' at '+i.endereco:''}. Does that still work for you?`}
+function reviewMessage(i){
+ const name=String(i.cliente||'').trim().split(/\s+/)[0];
+ return (name?'Hi '+name+'!':'Hi!')+" Thank you for choosing Next Finish Carpentry! I’m glad I could help with your project. If you’re happy with the work, I’d really appreciate it if you could leave a review on Google and Thumbtack. Your feedback means a lot to my small business!\\n\\nGoogle: https://maps.app.goo.gl/p8SV8jwYvnAvxvHj7?g_st=ac\\n\\nThumbtack: https://www.thumbtack.com/reviews/services/576942793783222282/write-customer-review\\n\\nThank you again!";
+}
+function requestReview(i){
+ if(i.status!=='Concluído')return;
+ let number=String(i.tel||'').replace(/\D/g,'');
+ if(number.length===10)number='1'+number;
+ if(number.length<10){toast('Cadastre um telefone para pedir avaliação');return}
+ const apple=/iPhone|iPad|iPod/i.test(navigator.userAgent||'');
+ window.location.href='sms:+'+number+(apple?'&':'?')+'body='+encodeURIComponent(reviewMessage(i));
+}
 function sms(i){
  let number=String(i.tel||'').replace(/\D/g,'');
  if(number.length===10)number='1'+number;
@@ -966,6 +979,7 @@ $('#list').onclick=e=>{
  else if(b.dataset.a==='copy-one')copy(blk(i),'Compromisso copiado');
  else if(b.dataset.a==='share-one')shareAppointment(i);
  else if(b.dataset.a==='sms')sms(i);
+ else if(b.dataset.a==='review')requestReview(i);
  else if(b.dataset.a==='ed')openForm(i);
  else if(b.dataset.a==='del')openQuickDelete(i);
  else if(b.dataset.a==='rp')openForm({cliente:i.cliente,tel:i.tel,endereco:i.endereco,data:S.sel,status:'Aguardando confirmação'},true);
