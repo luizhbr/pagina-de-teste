@@ -1231,8 +1231,18 @@ render();
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+      await registration.update();
+      // One safe reload when a new worker takes over; localStorage is untouched.
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (sessionStorage.getItem('nfc-sw-reload-once') === '1') return;
+        sessionStorage.setItem('nfc-sw-reload-once', '1');
+        window.location.reload();
+      });
+      window.addEventListener('pageshow', () => registration.update().catch(() => {}));
+    } catch (_) { /* Offline access continues to work. */ }
   });
 }
 </script>
