@@ -570,6 +570,8 @@ function blk(i){
    i.endereco?'📍 '+i.endereco:'',
    i.servico?'_'+String(i.servico).trim()+'_':'',
    amount(i.valor),
+   i.status==='Visita de orçamento'&&String(i.valorLead||'').trim()?'Valor do lead: '+amount(i.valorLead):'',
+   String(i.obs||'').trim()?'Observações: '+String(i.obs).trim():'',
    i.status?'Status: '+String(i.status).trim():''
  ].filter(Boolean).join('\n\n');
 }
