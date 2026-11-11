@@ -255,6 +255,13 @@ body.month-mode main{position:relative;z-index:0}
 .duration-row input{width:100%}
 .duration-unit{font-size:10px;font-weight:400}
 .duration-preview{flex:1;color:var(--mu);font-size:12px;line-height:1.45;padding-bottom:8px}
+.dh{flex-wrap:wrap;row-gap:7px}
+.dh .copy-selected:not(:disabled){background:var(--ac);color:var(--on);border-radius:10px;padding:8px 10px}
+.dh .copy-selected:disabled{opacity:.4;cursor:not-allowed}
+.select-copy-check{width:21px;height:21px;flex:0 0 21px;accent-color:var(--ac);margin:0;cursor:pointer}
+.row.selecting .rh{cursor:pointer}
+.row.selecting .card-side{pointer-events:none}
+.row.selecting:has(.select-copy-check:checked){background:rgba(244,185,27,.07)}
 </style>
 </head>
 <body>
@@ -430,7 +437,9 @@ function upCl(i){if(!i.cliente)return;const k=nk(i.cliente),c=clients[k]||{};cli
 if(!items)items=SEED;
 if(!clients){clients={};items.forEach(upCl)}
 migrateStatuses();save();
-const S={statusId:null,ws:iso(mon(new Date())),sel:iso(new Date()),q:'',f:'todos',edit:null,open:null,view:['week','month'].includes(P.view)?P.view:'week',scope:P.view==='month'?'period':'day'};
+const S={statusId:null,ws:iso(mon(new Date())),sel:iso(new Date()),q:'',f:'todos',edit:null,open:null,view:['week','month'].includes(P.view)?P.view:'week',scope:P.view==='month'?'period':'day',selectMode:false,selectedIds:new Set()};
+function clearCopySelection(){S.selectMode=false;S.selectedIds.clear()}
+function toggleCopySelection(id){if(S.selectedIds.has(id))S.selectedIds.delete(id);else S.selectedIds.add(id);render()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(items));localStorage.setItem(KEY+'-p',JSON.stringify(P));localStorage.setItem(KEY+'-c',JSON.stringify(clients))}catch(e){toast('Não foi possível salvar')}}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1800)}
 const key=i=>i.data+(i.hora||'99:99');
@@ -440,6 +449,7 @@ const h12=t=>{const[h,m]=t.split(':').map(Number);return((h+11)%12+1)+':'+String
 function setView(next){
   const choices=['week','month'];
   if(!choices.includes(next))return;
+  clearCopySelection();
   S.view=next;
   S.scope=next==='week'?'day':'period';
   S.open=null;
@@ -450,6 +460,7 @@ function setView(next){
 }
 
 function goToDay(day){
+  clearCopySelection();
   S.sel=day;
   S.ws=iso(mon(prs(day)));
   S.scope='day';
@@ -461,6 +472,7 @@ function goToDay(day){
 
 
 function moveBy(n){
+  clearCopySelection();
   const d=prs(S.sel);
   if(S.view==='week') d.setDate(d.getDate()+n*7);
   else {
@@ -531,13 +543,19 @@ function render(){
  });
  if(S.f!=='todos')L=L.filter(i=>i.status===S.f);
  L.sort((a,b)=>(iKey(a)).localeCompare(iKey(b)));
+ // Only visible appointments can be copied in the current selection.
+ const visibleIds=new Set(L.map(i=>i.id));
+ for(const id of S.selectedIds)if(!visibleIds.has(id))S.selectedIds.delete(id);
+ const selectedCount=S.selectedIds.size;
  const isPeriod=!q&&S.scope==='period'&&mode!=='week';
  const periodTitle='Serviços do mês';
  const dayTitle=fmt(prs(S.sel),{weekday:'long',day:'numeric',month:'long'});
  const label=q?'Resultados':isPeriod?periodTitle:dayTitle;
  const scopeButton=!q&&mode!=='week'
     ?`<button type="button" class="scope" data-a="scope">${isPeriod?'Ver dia':'Ver mês completo'}</button>`:'';
- $('#dh').innerHTML=`<h2>${label}</h2><span>${L.length} ${L.length===1?'serviço':'serviços'}</span>${scopeButton}<button type="button" data-a="cd">Copiar</button>${!q&&S.scope==='day'&&items.some(i=>i.data===S.sel&&i.status!=='Concluído')?'<button type="button" class="finish-day" data-a="finish-day">Concluir todos do dia</button>':''}`;
+ $('#dh').innerHTML=`<h2>${label}</h2><span>${L.length} ${L.length===1?'serviço':'serviços'}</span>${scopeButton}${S.selectMode?
+ '<button type="button" data-a="select-all">'+(selectedCount===L.length&&L.length?'Desmarcar todos':'Selecionar todos')+'</button><button type="button" class="copy-selected" data-a="copy-selected" '+(selectedCount?'':'disabled')+'>Copiar ('+selectedCount+')</button><button type="button" data-a="cancel-select">Cancelar</button>'
+ :'<button type="button" data-a="cd">Copiar</button>'+(L.length?'<button type="button" data-a="start-select">Selecionar</button>':'')+(!q&&S.scope==='day'&&items.some(i=>i.data===S.sel&&i.status!=='Concluído')?'<button type="button" class="finish-day" data-a="finish-day">Concluir todos do dia</button>':'')}`;
  const now=new Date(),lastDay=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
  const monthEnd=now.getDate()===lastDay;
  $('#bkp').innerHTML=monthEnd
@@ -551,8 +569,8 @@ function render(){
    }
    const o=S.open===i.id;
    const visitDaily=i.status==='Visita de orçamento'&&!q&&S.scope==='day';
-   rows+=`<div class="row" data-id="${esc(i.id)}">
-     <div class="rh"><span class="hr${late(i)?' late':''}">${esc(i.hora?h12(i.hora):'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${i.totalDiasProjeto>1?`<small>Dia ${i.diaProjeto} de ${i.totalDiasProjeto}</small>`:''}${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><div class="card-side"><button type="button" class="pill" data-a="st" style="${badgeStyle(i.status,visitDaily&&i.visitaConcluida===true)}">${esc(i.status)}</button>${visitDaily?`<label class="visit-check-inline"><input type="checkbox" data-a="visit-check" aria-label="Visita realizada: ${esc(i.cliente)}" ${i.visitaConcluida===true?'checked':''}><span>Visita realizada</span></label>`:''}<button type="button" class="single-copy" data-a="copy-one" aria-label="Copiar somente o compromisso de ${esc(i.cliente)}" title="Copiar compromisso"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2"/></svg></button></div></div>
+   rows+=`<div class="row${S.selectMode?' selecting':''}" data-id="${esc(i.id)}">
+     <div class="rh">${S.selectMode?`<input class="select-copy-check" type="checkbox" data-a="copy-check" aria-label="Selecionar compromisso de ${esc(i.cliente)}" ${S.selectedIds.has(i.id)?'checked':''}>`:''}<span class="hr${late(i)?' late':''}">${esc(i.hora?h12(i.hora):'--:--')}</span><div class="mid"><b>${esc(i.cliente)}</b>${i.totalDiasProjeto>1?`<small>Dia ${i.diaProjeto} de ${i.totalDiasProjeto}</small>`:''}${o?'':`<small>${esc(i.servico||i.endereco)}</small>`}</div><div class="card-side"><button type="button" class="pill" data-a="st" style="${badgeStyle(i.status,visitDaily&&i.visitaConcluida===true)}">${esc(i.status)}</button>${visitDaily?`<label class="visit-check-inline"><input type="checkbox" data-a="visit-check" aria-label="Visita realizada: ${esc(i.cliente)}" ${i.visitaConcluida===true?'checked':''}><span>Visita realizada</span></label>`:''}<button type="button" class="single-copy" data-a="copy-one" aria-label="Copiar somente o compromisso de ${esc(i.cliente)}" title="Copiar compromisso"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2"/></svg></button></div></div>
      ${o?`<div class="dt">${i.endereco?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.endereco)}">${esc(i.endereco)}</a>`:''}${i.servico?`<p>${esc(i.servico)}</p>`:''}${i.valor?`<p><b>${esc(i.valor)}</b></p>`:''}${i.obs?`<p class="mu">${esc(i.obs)}</p>`:''}${validPhoto(i.foto)?`<div class="service-photo"><img src="${i.foto}" alt="Imagem de referência do serviço"><button type="button" data-a="share-one" class="share-photo">Compartilhar foto + serviço</button></div>`:''}
        <div class="ac"><button type="button" class="wa" data-a="sms">SMS</button>${i.status==='Concluído'?'<button type="button" class="review-request" data-a="review">Pedir avaliação</button>':''}<button type="button" data-a="rp">Repetir</button><button type="button" data-a="ed">Editar</button><button type="button" class="quick-delete" data-a="del" aria-label="Excluir serviço de ${esc(i.cliente||'cliente')}" title="Excluir serviço"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14M10 10v7M14 10v7"/></svg></button></div></div>`:''}
    </div>`;
@@ -1028,6 +1046,11 @@ $('#list').onclick=e=>{
  const row=e.target.closest('.row');if(!row)return;
  const i=items.find(x=>x.id===row.dataset.id),b=e.target.closest('button');
  if(!i)return;
+ if(S.selectMode){
+  if(e.target.closest('input[data-a="copy-check"]'))return;
+  toggleCopySelection(i.id);
+  return;
+ }
  if(e.target.closest('[data-a="visit-check"]'))return;
  if(!b){if(e.target.closest('a'))return;S.open=S.open===i.id?null:i.id;return render()}
  if(b.dataset.a==='st')openStatus(i);
@@ -1061,6 +1084,12 @@ $('#finishDayConfirm').onclick=()=>{
  if(eligible.length){save();render();toast(eligible.length+' serviço'+(eligible.length===1?'':'s')+' concluído'+(eligible.length===1?'':'s'))}
 };
 $('#list').onchange=e=>{
+ const selected=e.target.closest('input[data-a="copy-check"]');
+ if(selected&&S.selectMode){
+  const row=selected.closest('.row');
+  if(row&&items.some(i=>i.id===row.dataset.id))toggleCopySelection(row.dataset.id);
+  return;
+ }
  const cb=e.target.closest('input[data-a="visit-check"]');
  if(!cb)return;
  const row=cb.closest('.row');
@@ -1071,9 +1100,26 @@ $('#list').onchange=e=>{
  toast(i.visitaConcluida?'Visita realizada':'Visita pendente');
 };
 $('#dh').onclick=e=>{
+  const action=e.target.closest('button[data-a]')?.dataset.a;
+  if(action==='start-select'){S.selectMode=true;S.selectedIds.clear();render();return}
+  if(action==='cancel-select'){clearCopySelection();render();return}
+  if(action==='select-all'){
+   const rows=[...document.querySelectorAll('#list .row[data-id]')];
+   const ids=rows.map(row=>row.dataset.id);
+   if(ids.length&&ids.every(id=>S.selectedIds.has(id)))S.selectedIds.clear();
+   else{S.selectedIds.clear();ids.forEach(id=>S.selectedIds.add(id))}
+   render();return;
+  }
+  if(action==='copy-selected'){
+   const ids=S.selectedIds;
+   const chosen=items.filter(i=>ids.has(i.id)).sort((a,b)=>iKey(a).localeCompare(iKey(b)));
+   if(!chosen.length){toast('Selecione pelo menos um compromisso');return}
+   copy(appointmentText(chosen),chosen.length+' compromisso'+(chosen.length===1?'':'s')+' copiado'+(chosen.length===1?'':'s'));
+   clearCopySelection();render();return;
+  }
   if(e.target.closest('[data-a="finish-day"]')){askFinishDay();return}
   if(e.target.dataset.a==='cd')copy(S.scope==='period'&&S.view!=='week'?periodText() : dayText(S.sel),'Agenda copiada');
-  if(e.target.dataset.a==='scope'){S.scope=S.scope==='period'?'day':'period';S.open=null;render()}
+  if(e.target.dataset.a==='scope'){clearCopySelection();S.scope=S.scope==='period'?'day':'period';S.open=null;render()}
 };
 
 $('#strip').onclick=e=>{
