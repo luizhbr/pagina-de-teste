@@ -626,21 +626,20 @@ function reviewMessage(i){
  const name=String(i.cliente||'').trim().split(/\s+/)[0];
  return (name?'Hi '+name+'!':'Hi!')+" Thank you for choosing Next Finish Carpentry! I’m glad I could help with your project. If you’re happy with the work, I’d really appreciate it if you could leave a review on Google and Thumbtack. Your feedback means a lot to my business!\n\nGoogle: https://maps.app.goo.gl/p8SV8jwYvnAvxvHj7?g_st=ac\n\nThumbtack: https://www.thumbtack.com/reviews/services/576942793783222282/write-customer-review\n\nThank you again!";
 }
+function openSmsDraft(phone,text){
+ let number=String(phone||'').replace(/\D/g,'');
+ if(number.length===10)number='1'+number;
+ // Without a phone, open a draft with an empty recipient so it can be chosen manually.
+ const recipient=number.length>=10?'+'+number:'';
+ const apple=/iPhone|iPad|iPod/i.test(navigator.userAgent||'');
+ window.location.href='sms:'+recipient+(apple?'&':'?')+'body='+encodeURIComponent(text);
+}
 function requestReview(i){
  if(i.status!=='Concluído')return;
- let number=String(i.tel||'').replace(/\D/g,'');
- if(number.length===10)number='1'+number;
- if(number.length<10){toast('Cadastre um telefone para pedir avaliação');return}
- const apple=/iPhone|iPad|iPod/i.test(navigator.userAgent||'');
- window.location.href='sms:+'+number+(apple?'&':'?')+'body='+encodeURIComponent(reviewMessage(i));
+ openSmsDraft(i.tel,reviewMessage(i));
 }
 function sms(i){
- let number=String(i.tel||'').replace(/\D/g,'');
- if(number.length===10)number='1'+number;
- if(number.length<10){toast('Cadastre um número de telefone para enviar SMS');return}
- const apple=/iPhone|iPad|iPod/i.test(navigator.userAgent||'');
- const link='sms:+'+number+(apple?'&':'?')+'body='+encodeURIComponent(msg(i));
- window.location.href=link;
+ openSmsDraft(i.tel,msg(i));
 }
 
 const dlg=$('#dlg'),fm=$('#fm');
